@@ -5,12 +5,62 @@
   --color-foreground: var(--foreground);
   --color-primary: #1E3A8A;
   --color-primary-soft: #EBF5FF;
+  
+  /* Stitch Design Colors */
+  --color-on-primary-fixed-variant: #5b4300;
+  --color-on-secondary-fixed: #00105c;
+  --color-surface-dim: #cddce7;
+  --color-on-primary-container: #ffcb51;
+  --color-on-tertiary: #ffffff;
+  --color-primary-fixed: #ffdf9e;
+  --color-secondary-container: #8596ff;
+  --color-secondary-fixed: #dee0ff;
+  --color-surface-tint: #785900;
+  --color-inverse-primary: #fabd00;
+  --color-outline: #757684;
+  --color-tertiary: #6c3400;
+  --color-on-tertiary-container: #ffc7a2;
+  --color-on-secondary: #ffffff;
+  --color-primary-container: #745600;
+  --color-surface-container-highest: #d6e5ef;
+  --color-on-secondary-fixed-variant: #293ca0;
+  --color-on-tertiary-fixed-variant: #713700;
+  --color-tertiary-fixed-dim: #ffb784;
+  --color-on-primary: #ffffff;
+  --color-outline-variant: #c5c5d4;
+  --color-tertiary-fixed: #ffdcc6;
+  --color-on-primary-fixed: #261a00;
+  --color-on-error-container: #93000a;
+  --color-on-background: #0f1d25;
+  --color-surface: #f5faff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-bright: #f5faff;
+  --color-primary-design: #563f00;
+  --color-on-surface: #0f1d25;
+  --color-surface-variant: #d6e5ef;
+  --color-inverse-on-surface: #e4f3fe;
+  --color-secondary: #4355b9;
+  --color-tertiary-container: #8f4700;
+  --color-inverse-surface: #24323a;
+  --color-on-secondary-container: #11278e;
+  --color-surface-container-low: #e9f5ff;
+  --color-on-tertiary-fixed: #301400;
+  --color-surface-container-high: #dbeaf5;
+  --color-on-surface-variant: #454652;
+  --color-error-container: #ffdad6;
+  --color-surface-container: #e1f0fb;
+  --color-primary-fixed-dim: #fabd00;
+  --color-secondary-fixed-dim: #bac3ff;
+
+  --font-headline: "Plus Jakarta Sans";
+  --font-body: "Manrope";
+  --font-label: "Manrope";
 }
 
 @layer base {
   :root {
-    --background: #F0F9FF;
-    --foreground: #1E293B;
+    --background: #f5faff;
+    --foreground: #0f1d25;
     --primary: #1E3A8A;
     --primary-soft: #EBF5FF;
   }
@@ -47,6 +97,23 @@ body {
   animation: fadeIn 0.8s ease-out forwards;
 }
 
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
 .premium-button {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -73,6 +140,26 @@ body {
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
+}
+
+/* Stitch Design Utilities */
+.kinetic-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.organic-shape {
+  position: absolute;
+  filter: blur(80px);
+  opacity: 0.5;
+  z-index: 1;
+}
+
+.floating-icon {
+  position: absolute;
+  color: #4355b9;
+  opacity: 0.15;
+  z-index: 2;
 }
 
 /* Liquid Glass / Glassmorphism */

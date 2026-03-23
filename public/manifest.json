@@ -1,0 +1,26 @@
+{
+  "name": "Routipass Kinshasa",
+  "short_name": "Routipass",
+  "description": "Système d'identité numérique et gestion de véhicules pour la RDC.",
+  "start_url": "/dashboard-conducteur",
+  "display": "standalone",
+  "background_color": "#1B365D",
+  "theme_color": "#FFC107",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

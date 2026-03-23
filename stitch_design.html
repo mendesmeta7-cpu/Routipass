@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary-fixed-variant": "#5b4300",
+              "on-secondary-fixed": "#00105c",
+              "surface-dim": "#cddce7",
+              "on-primary-container": "#ffcb51",
+              "on-tertiary": "#ffffff",
+              "primary-fixed": "#ffdf9e",
+              "secondary-container": "#8596ff",
+              "secondary-fixed": "#dee0ff",
+              "surface-tint": "#785900",
+              "background": "#f5faff",
+              "inverse-primary": "#fabd00",
+              "outline": "#757684",
+              "tertiary": "#6c3400",
+              "on-tertiary-container": "#ffc7a2",
+              "on-secondary": "#ffffff",
+              "primary-container": "#745600",
+              "surface-container-highest": "#d6e5ef",
+              "on-secondary-fixed-variant": "#293ca0",
+              "on-tertiary-fixed-variant": "#713700",
+              "tertiary-fixed-dim": "#ffb784",
+              "on-primary": "#ffffff",
+              "outline-variant": "#c5c5d4",
+              "tertiary-fixed": "#ffdcc6",
+              "on-primary-fixed": "#261a00",
+              "on-error-container": "#93000a",
+              "on-background": "#0f1d25",
+              "surface": "#f5faff",
+              "surface-container-lowest": "#ffffff",
+              "surface-bright": "#f5faff",
+              "primary": "#563f00",
+              "on-surface": "#0f1d25",
+              "error": "#ba1a1a",
+              "surface-variant": "#d6e5ef",
+              "inverse-on-surface": "#e4f3fe",
+              "secondary": "#4355b9",
+              "tertiary-container": "#8f4700",
+              "inverse-surface": "#24323a",
+              "on-secondary-container": "#11278e",
+              "on-error": "#ffffff",
+              "surface-container-low": "#e9f5ff",
+              "on-tertiary-fixed": "#301400",
+              "surface-container-high": "#dbeaf5",
+              "on-surface-variant": "#454652",
+              "error-container": "#ffdad6",
+              "surface-container": "#e1f0fb",
+              "primary-fixed-dim": "#fabd00",
+              "secondary-fixed-dim": "#bac3ff"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Manrope"],
+              "label": ["Manrope"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .kinetic-bg {
+            background-color: #f5faff;
+            position: relative;
+            overflow: hidden;
+        }
+        .organic-shape {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.5;
+            z-index: 1;
+        }
+        .floating-icon {
+            position: absolute;
+            color: #4355b9;
+            opacity: 0.15;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body class="bg-background font-body text-on-background min-h-screen">
+<!-- Main Wrapper with Kinetic Path Background -->
+<div class="kinetic-bg min-h-screen w-full flex items-center justify-center p-6 relative">
+<!-- Organic Background Shapes -->
+<div class="organic-shape bg-on-primary-container w-[500px] h-[500px] -top-40 -left-20 rounded-full"></div>
+<div class="organic-shape bg-secondary w-[600px] h-[600px] -bottom-60 -right-20 rounded-full"></div>
+<div class="organic-shape bg-primary-fixed w-[300px] h-[300px] top-1/2 right-10 rounded-full"></div>
+<!-- Sprinkled Icons -->
+<div class="floating-icon top-10 left-[15%]" data-icon="local_taxi"><span class="material-symbols-outlined !text-6xl">local_taxi</span></div>
+<div class="floating-icon bottom-20 left-[10%]" data-icon="motorcycle"><span class="material-symbols-outlined !text-7xl">motorcycle</span></div>
+<div class="floating-icon top-[20%] right-[15%]" data-icon="person"><span class="material-symbols-outlined !text-5xl">person</span></div>
+<div class="floating-icon bottom-[30%] right-[25%]" data-icon="hail"><span class="material-symbols-outlined !text-6xl">hail</span></div>
+<div class="floating-icon top-[45%] left-[5%]" data-icon="directions_car"><span class="material-symbols-outlined !text-4xl">directions_car</span></div>
+<!-- Login Card -->
+<div class="relative z-10 w-full max-w-[480px] bg-surface-container-lowest rounded-lg shadow-[0_20px_50px_rgba(15,29,37,0.08)] p-10 border border-outline-variant/15">
+<!-- Header Section -->
+<div class="mb-10 text-center">
+<div class="inline-flex items-center justify-center size-16 bg-on-primary-container rounded-full mb-6">
+<svg class="size-8 text-on-primary-fixed" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z" fill="currentColor" fill-rule="evenodd"></path>
+<path clip-rule="evenodd" d="M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h1 class="font-headline text-3xl font-extrabold text-on-background tracking-tight">Votre identifiant</h1>
+<p class="text-on-surface-variant font-medium mt-2">Accédez à votre espace chauffeur</p>
+</div>
+<!-- Login Form -->
+<form class="space-y-6">
+<!-- ID Input -->
+<div class="space-y-2">
+<label class="text-on-background font-label font-bold text-sm px-1">ID</label>
+<div class="relative group">
+<input class="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-14 px-6 text-on-surface font-medium transition-all placeholder:text-outline/60 shadow-inner" placeholder="Identifiant chauffeur" type="text"/>
+</div>
+</div>
+<!-- PIN Input -->
+<div class="space-y-2">
+<label class="text-on-background font-label font-bold text-sm px-1">Code PIN</label>
+<div class="relative group">
+<input class="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-14 px-6 text-on-surface font-medium tracking-[0.5em] transition-all placeholder:text-outline/60 shadow-inner" placeholder="••••" type="password"/>
+</div>
+</div>
+<!-- Submit Button -->
+<button class="w-full bg-on-primary-container hover:bg-primary-container hover:text-on-primary-container text-on-primary-fixed h-14 rounded-full font-headline font-bold text-lg flex items-center justify-center gap-2 transition-all duration-300 shadow-lg shadow-on-primary-container/20 group" type="submit">
+                    Se connecter
+                    <span class="material-symbols-outlined transition-transform group-hover:translate-x-1" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</form>
+<!-- Secondary Links -->
+<div class="mt-8 text-center space-y-6">
+<p class="text-on-surface-variant font-medium">
+                    Pas encore enregistré ? 
+                    <a class="text-secondary font-bold hover:underline transition-all" href="#">Crée un compte conducteur</a>
+</p>
+<div class="pt-4 border-t border-outline-variant/20">
+<a class="inline-flex items-center gap-2 text-on-surface-variant font-bold hover:text-on-surface transition-all group" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="arrow_back">arrow_back</span>
+                        Retour à l'accueil
+                    </a>
+</div>
+</div>
+</div>
+<!-- Decorative Branding Layer -->
+<div class="fixed bottom-10 right-10 text-on-surface-variant/20 pointer-events-none select-none">
+<h2 class="font-headline font-black text-8xl tracking-tighter opacity-10">DRIVER</h2>
+</div>
+</div>
+</body></html>
