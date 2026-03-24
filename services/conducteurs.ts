@@ -22,6 +22,17 @@ export const conducteurService = {
     return data;
   },
 
+  async isNumeroPermisUsed(numeroPermis: string): Promise<boolean> {
+    const { data, error } = await supabase
+      .from('conducteurs')
+      .select('id')
+      .eq('numero_permis', numeroPermis)
+      .maybeSingle();
+
+    if (error) throw error;
+    return !!data;
+  },
+
   async createConducteur(data: Omit<Conducteur, 'id' | 'driver_id' | 'date_creation'> & { pin?: string }): Promise<Conducteur> {
     const { pin, ...insertData } = data;
     
@@ -52,7 +63,12 @@ export const conducteurService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === '23505') {
+        throw new Error('Ce numéro de permis est déjà utilisé, Le compte existe déjà');
+      }
+      throw error;
+    }
     return conducteur;
   },
 
@@ -132,7 +148,24 @@ export const conducteurService = {
         vehicule_id: vehiculeId,
       });
 
+    if (error) {
+      if (error.code === '23505') {
+        throw new Error('Ce véhicule est déjà lié à votre profil');
+      }
+      throw error;
+    }
+  },
+
+  async isVehiculeLinked(conducteurId: string, vehiculeId: string): Promise<boolean> {
+    const { data, error } = await supabase
+      .from('conducteur_vehicule')
+      .select('id')
+      .eq('conducteur_id', conducteurId)
+      .eq('vehicule_id', vehiculeId)
+      .maybeSingle();
+
     if (error) throw error;
+    return !!data;
   },
 
   async getConducteursAssocies(vehiculeId: string, currentConducteurId: string): Promise<string[]> {

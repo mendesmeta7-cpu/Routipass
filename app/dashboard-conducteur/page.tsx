@@ -32,6 +32,7 @@ export default function DashboardConducteur() {
   const [showPreview, setShowPreview] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [errorLink, setErrorLink] = useState("");
 
   // States to evaluate account health
   const [hasAlerts, setHasAlerts] = useState(false);
@@ -163,6 +164,7 @@ export default function DashboardConducteur() {
   const lierVehicule = async () => {
     if (!conducteur || !vehiculeRecherche) return;
     setLoadingSearch(true);
+    setErrorLink("");
     try {
       await conducteurService.lierVehicule(conducteur.id, vehiculeRecherche.id);
       
@@ -174,8 +176,9 @@ export default function DashboardConducteur() {
       setVehiculeRecherche(null);
       setShowPreview(false);
       setPlaque("");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setErrorLink(error.message || "Erreur lors de la liaison du véhicule.");
     } finally {
       setLoadingSearch(false);
     }
@@ -533,6 +536,7 @@ export default function DashboardConducteur() {
         vehicule={vehiculeRecherche}
         onConfirm={lierVehicule}
         loading={loadingSearch}
+        error={errorLink}
       />
     </div>
   );

@@ -36,6 +36,13 @@ export default function InscriptionPage() {
     try {
       const permis = await conducteurService.verifyPermis(numeroPermis);
       if (permis) {
+        // Check if the license is already linked to a conductor account
+        const isUsed = await conducteurService.isNumeroPermisUsed(numeroPermis);
+        if (isUsed) {
+          setErrorPermis("Ce numéro de permis est déjà utilisé, Le compte existe déjà");
+          setLoadingVerify(false);
+          return;
+        }
         setDonneesPermis(permis);
         setEtape(2);
       } else {

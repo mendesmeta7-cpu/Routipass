@@ -12,9 +12,10 @@ interface VehiclePreviewModalProps {
   vehicule: Vehicule | null;
   onConfirm: () => void;
   loading?: boolean;
+  error?: string;
 }
 
-export function VehiclePreviewModal({ isOpen, onClose, vehicule, onConfirm, loading }: VehiclePreviewModalProps) {
+export function VehiclePreviewModal({ isOpen, onClose, vehicule, onConfirm, loading, error }: VehiclePreviewModalProps) {
   if (!vehicule) return null;
 
   const assuranceStatus = getValidityStatus(vehicule.date_expiration_assurance);
@@ -145,6 +146,13 @@ export function VehiclePreviewModal({ isOpen, onClose, vehicule, onConfirm, load
             </div>
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 text-center text-sm font-bold animate-in fade-in duration-300">
+            {error}
+          </div>
+        )}
 
         {/* Action Button */}
         <div className="pt-4 pb-2">
