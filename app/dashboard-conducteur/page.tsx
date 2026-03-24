@@ -11,6 +11,7 @@ import { authService } from "@/services/auth";
 import { conducteurService } from "@/services/conducteurs";
 import { Conducteur, Vehicule, Amende } from "@/types";
 import { VehiclePreviewModal } from "@/components/VehiclePreviewModal";
+import { SuccessToast } from "@/components/ui/toast";
 
 // Interface for a vehicle combined with its associated drivers' photos
 interface VehiculeWithPhotos extends Vehicule {
@@ -33,6 +34,7 @@ export default function DashboardConducteur() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [errorLink, setErrorLink] = useState("");
+  const [showToast, setShowToast] = useState(false);
 
   // States to evaluate account health
   const [hasAlerts, setHasAlerts] = useState(false);
@@ -176,6 +178,7 @@ export default function DashboardConducteur() {
       setVehiculeRecherche(null);
       setShowPreview(false);
       setPlaque("");
+      setShowToast(true);
     } catch (error: any) {
       console.error(error);
       setErrorLink(error.message || "Erreur lors de la liaison du véhicule.");
@@ -537,6 +540,12 @@ export default function DashboardConducteur() {
         onConfirm={lierVehicule}
         loading={loadingSearch}
         error={errorLink}
+      />
+
+      <SuccessToast 
+        message="Véhicule lié avec succès à votre profil !" 
+        isVisible={showToast} 
+        onClose={() => setShowToast(false)} 
       />
     </div>
   );
