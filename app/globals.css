@@ -114,33 +114,49 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.premium-button {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* iOS 26 Futuristic Button Interactions */
+.ios-button {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
   position: relative;
+  isolation: isolate;
   overflow: hidden;
-  letter-spacing: 0.01em;
 }
 
-.premium-button:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-  box-shadow: 0 10px 20px -5px rgba(30, 58, 138, 0.3);
+.ios-button:hover {
+  transform: scale(1.04) translateY(-2px);
+  filter: brightness(1.05);
 }
 
-.premium-button:active {
-  transform: translateY(0);
+.ios-button:active {
+  transform: scale(0.96) translateY(0);
+  transition-duration: 0.1s;
 }
 
-/* Premium Animations */
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+/* Subtle Magnetic Shine Effect */
+.ios-button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: -1;
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+.ios-button:hover::after {
+  opacity: 1;
 }
+
+/* Staggered entry animations */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-500 { animation-delay: 500ms; }
 
 /* Stitch Design Utilities */
 .kinetic-bg {
