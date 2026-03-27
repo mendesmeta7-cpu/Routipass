@@ -1,0 +1,422 @@
+"use client"
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { ChevronLeft, FileText, AlertCircle, ShieldCheck, CreditCard, ChevronRight, CheckCircle2, History } from 'lucide-react';
+import { conducteurService } from '@/services/conducteurs';
+import { authService } from '@/services/auth';
+import type { Conducteur, Vehicule } from '@/types';
+import { getUsageIllustration } from '@/utils/vehicleUtils';
+
+type TabType = 'OBLIGATIONS' | 'AMENDES';
+type SubSectionType = 'VIGNETTE' | 'ASSURANCE' | 'CONTROLE_TECHNIQUE' | null;
+
+export default function StatutFiscal() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<TabType>('OBLIGATIONS');
+  const [activeSection, setActiveSection] = useState<SubSectionType>(null);
+  const [selectedVehiculeId, setSelectedVehiculeId] = useState<string | null>(null);
+  const [showPaymentFlow, setShowPaymentFlow] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'MOBILE_MONEY' | 'CARTE' | null>(null);
+  const [toastMessage, setToastMessage] = useState("");
+
+  const [vehicules, setVehicules] = useState<Vehicule[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        if (!user) {
+          router.push('/login');
+          return;
+        }
+
+        const profile = await conducteurService.getProfileById(user.id);
+        if (profile) {
+          const vehiculesData = await conducteurService.getVehicules(profile.id);
+          setVehicules(vehiculesData);
+        } else {
+          router.push('/login');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [router]);
+
+  const selectVehicleForPayment = (vId: string, section: SubSectionType) => {
+    const vehicule = vehicules.find(v => v.id === vId);
+    if (!vehicule) return;
+
+    const expDate = section === 'VIGNETTE' ? vehicule.date_expiration_vignette : vehicule.date_expiration_assurance;
+    const daysLeft = calculateDaysRemaining(expDate);
+
+    if (daysLeft > 0) {
+      setToastMessage("Le document est encore valide. Renouvellement impossible.");
+      setTimeout(() => setToastMessage(""), 3000);
+      return;
+    }
+
+    setSelectedVehiculeId(vId);
+    setActiveSection(section);
+    setShowPaymentFlow(true);
+  };
+
+  const calculateDaysRemaining = (expDateStr: string) => {
+    if (!expDateStr) return 0;
+    const exp = new Date(expDateStr);
+    const now = new Date();
+    const diffTime = exp.getTime() - now.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const getSelectedVehicule = () => vehicules.find(v => v.id === selectedVehiculeId);
+
+  // === RENDER HELPERS ===
+
+  const renderPaymentPage = () => {
+    const vehicule = getSelectedVehicule();
+    if (!vehicule) return null;
+
+    const isVignette = activeSection === 'VIGNETTE';
+    const amount = isVignette ? (vehicule.montant_vignette || 0) : (vehicule.montant_assurance || 0);
+    const currency = isVignette ? (vehicule.devise_vignette || 'USD') : 'USD';
+
+    return (
+      <div className="flex flex-col h-full bg-[#f8fbff] animate-in slide-in-from-right duration-300">
+        <div className="bg-[#e9b11e] pt-12 pb-6 px-6 md:px-12 lg:px-24 shrink-0">
+           <div className="flex items-center gap-4">
+              <button onClick={() => setShowPaymentFlow(false)} className="bg-white/30 p-2 rounded-full hover:bg-white/50 transition">
+                 <ChevronLeft className="w-6 h-6 text-black" />
+              </button>
+              <h1 className="text-xl font-black text-black tracking-tight flex-1 truncate">Paiement {isVignette ? 'Vignette' : 'Assurance'}</h1>
+           </div>
+        </div>
+
+        <div className="flex-1 px-6 md:px-12 lg:px-24 py-6 pb-24">
+           {/* Summary Card */}
+           <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                 <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 p-2">
+                    <img src={getUsageIllustration(vehicule.usage_categorie || 'Privé')} alt="" className="w-full h-full object-contain" />
+                 </div>
+                 <div>
+                    <h3 className="font-black text-[#1e3b6a] text-lg">{vehicule.marque} {vehicule.modele}</h3>
+                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">{vehicule.plaque}</span>
+                 </div>
+              </div>
+              <div className="border-t border-dashed border-gray-200 my-2"></div>
+              <div className="flex justify-between items-center">
+                 <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">Montant à régler</span>
+                 <span className="text-2xl font-black text-red-600">{amount} {currency}</span>
+              </div>
+           </div>
+
+           {/* Payment Methods */}
+           <h3 className="text-sm font-black text-[#1e3b6a] mt-8 mb-4 uppercase tracking-widest">Moyen de paiement</h3>
+           <div className="flex flex-col gap-3">
+              <button 
+                onClick={() => setPaymentMethod('MOBILE_MONEY')}
+                className={`w-full bg-white rounded-2xl p-4 flex items-center gap-4 border-2 transition-all ${paymentMethod === 'MOBILE_MONEY' ? 'border-blue-500 shadow-md' : 'border-transparent shadow-sm'}`}
+              >
+                 <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
+                    <History className="w-6 h-6 text-green-600" />
+                 </div>
+                 <div className="flex flex-col items-start flex-1">
+                    <span className="font-black text-[#1e3b6a]">Mobile Money</span>
+                    <span className="text-xs text-gray-400 font-medium">Mpesa, Airtel, Orange</span>
+                 </div>
+                 {paymentMethod === 'MOBILE_MONEY' && <CheckCircle2 className="w-6 h-6 text-blue-500" />}
+              </button>
+
+              <button 
+                onClick={() => setPaymentMethod('CARTE')}
+                className={`w-full bg-white rounded-2xl p-4 flex items-center gap-4 border-2 transition-all ${paymentMethod === 'CARTE' ? 'border-blue-500 shadow-md' : 'border-transparent shadow-sm'}`}
+              >
+                 <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <CreditCard className="w-6 h-6 text-blue-600" />
+                 </div>
+                 <div className="flex flex-col items-start flex-1">
+                    <span className="font-black text-[#1e3b6a]">Carte Bancaire</span>
+                    <span className="text-xs text-gray-400 font-medium">Visa, Mastercard</span>
+                 </div>
+                 {paymentMethod === 'CARTE' && <CheckCircle2 className="w-6 h-6 text-blue-500" />}
+              </button>
+           </div>
+        </div>
+
+        {/* Footer actions */}
+        <div className="bg-white p-6 md:px-12 lg:px-24 border-t border-gray-100 shrink-0">
+           <button 
+             disabled={!paymentMethod}
+             className="w-full bg-[#e9b11e] text-black font-black text-sm uppercase tracking-widest py-4 rounded-2xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow-500 transition-colors"
+           >
+              Procéder au paiement
+           </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderVehiclesList = (section: 'VIGNETTE' | 'ASSURANCE') => {
+    return (
+      <div className="flex flex-col gap-4 mt-6">
+        <div className="flex items-center gap-2 mb-2">
+           <button onClick={() => setActiveSection(null)} className="p-2 -ml-2 hover:bg-blue-50 rounded-full text-[#1e3b6a]">
+             <ChevronLeft className="w-5 h-5" />
+           </button>
+           <h2 className="text-lg font-black text-[#1e3b6a] tracking-tight truncate">Plaques liées ({section})</h2>
+        </div>
+
+        {vehicules.length === 0 ? (
+          <div className="text-center text-gray-400 py-10 font-medium text-sm">
+             Aucun véhicule enregistré.
+          </div>
+        ) : (
+          vehicules.map((v, idx) => {
+            const expDate = section === 'VIGNETTE' ? v.date_expiration_vignette : v.date_expiration_assurance;
+            const daysLeft = calculateDaysRemaining(expDate);
+            const urgent = daysLeft <= 0;
+
+            const today = new Date();
+            const vignetteOk = v.date_expiration_vignette ? new Date(v.date_expiration_vignette) >= today : false;
+            const assOk = v.date_expiration_assurance ? new Date(v.date_expiration_assurance) >= today : false;
+            const ctOk = v.date_prochain_controle ? new Date(v.date_prochain_controle) >= today : false;
+
+            return (
+              <button 
+                key={v.id} 
+                onClick={() => selectVehicleForPayment(v.id, section)}
+                className="w-full text-left bg-white rounded-3xl p-3 sm:p-5 shadow-sm border border-gray-100 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-5 relative transition-all hover:shadow-md hover:-translate-y-1 group animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both" style={{ animationDelay: `${idx * 100}ms` }}
+              >
+                 {/* Vehicle Image */}
+                 <div className="w-16 h-16 sm:w-24 sm:h-24 shrink-0 flex items-center justify-center p-1">
+                   <img src={getUsageIllustration(v.usage_categorie || 'Privé')} alt={v.marque} className="w-full h-full object-contain drop-shadow-sm" />
+                 </div>
+
+                 {/* Vehicle Info */}
+                 <div className="flex-1 flex flex-col min-w-[150px]">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-black text-[#1e3b6a] text-sm sm:text-lg leading-none">{v.marque} <span className="text-gray-500 font-semibold">{v.modele}</span></h4>
+                      <span className="text-[9px] sm:text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase tracking-widest leading-none whitespace-nowrap">
+                        {v.plaque}
+                      </span>
+                    </div>
+                    
+                    {/* Fiscal Indicators */}
+                    <div className="flex items-center flex-wrap gap-x-2 sm:gap-x-3 gap-y-1 mt-2 sm:mt-4">
+                       <div className="flex items-center gap-1 sm:gap-1.5 bg-gray-50 px-2 sm:px-3 py-1 rounded-md">
+                          <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${urgent ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                          <span className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest whitespace-nowrap ${urgent ? 'text-red-500' : 'text-gray-500'}`}>
+                             {section} • {urgent ? 'EXPIRÉ' : `VALIDE`}
+                          </span>
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="w-full sm:w-auto flex justify-end shrink-0 sm:pl-2 mt-1 sm:mt-0">
+                   <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-blue-50 transition-colors shrink-0">
+                      <ChevronRight className="w-4 h-4 text-blue-500" />
+                   </div>
+                 </div>
+              </button>
+            )
+          })
+        )}
+      </div>
+    );
+  };
+
+  const renderControleTechnique = () => {
+    return (
+      <div className="flex flex-col gap-4 mt-6">
+        <div className="flex items-center gap-2 mb-2">
+           <button onClick={() => setActiveSection(null)} className="p-2 -ml-2 hover:bg-blue-50 rounded-full text-[#1e3b6a]">
+             <ChevronLeft className="w-5 h-5" />
+           </button>
+           <h2 className="text-lg font-black text-[#1e3b6a] tracking-tight">Validité Contrôle Tech.</h2>
+        </div>
+
+        {vehicules.length === 0 ? (
+          <div className="text-center text-gray-400 py-10 font-medium text-sm">
+             Aucun véhicule enregistré.
+          </div>
+        ) : (
+          vehicules.map(v => {
+            const expDate = v.date_prochain_controle;
+            const daysLeft = calculateDaysRemaining(expDate);
+            const urgent = daysLeft <= 0;
+
+            return (
+              <div 
+                key={v.id} 
+                className="w-full bg-white rounded-3xl p-5 shadow-sm border border-gray-50 flex flex-col gap-4 relative overflow-hidden"
+              >
+                {urgent && <div className="absolute top-0 right-0 w-16 h-16 bg-red-50 rounded-bl-full -z-10"></div>}
+                
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                   <div className="flex flex-col">
+                      <h4 className="font-black text-[#1e3b6a] text-base">{v.plaque}</h4>
+                      <span className="text-[11px] font-bold tracking-widest text-[#1e3b6a]/50 uppercase">{v.marque}</span>
+                   </div>
+                   <ShieldCheck className={`w-8 h-8 ${urgent ? 'text-red-400' : 'text-green-500'}`} />
+                </div>
+                
+                <div className="flex justify-between items-end">
+                   <div className="flex flex-col">
+                      <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Date d'expiration</span>
+                      <span className="font-black text-gray-900 text-sm mt-0.5">
+                         {expDate ? new Date(expDate).toLocaleDateString() : 'N/A'}
+                      </span>
+                   </div>
+                   <div className="flex flex-col items-end">
+                      <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Compte à rebours</span>
+                      <span className={`font-black text-2xl leading-none mt-1 ${urgent ? 'text-red-600' : 'text-green-600'}`}>
+                         {daysLeft < 0 ? 0 : daysLeft} <span className="text-[12px] font-bold opacity-50">Jours</span>
+                      </span>
+                   </div>
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+    );
+  }
+
+  const renderSectionContent = () => {
+    if (activeTab === 'AMENDES') {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 opacity-50">
+           <History className="w-16 h-16 text-gray-300 mb-4" />
+           <p className="font-bold text-gray-400">Aucune amende en cours.</p>
+        </div>
+      );
+    }
+
+    if (activeSection === 'VIGNETTE' || activeSection === 'ASSURANCE') {
+       return renderVehiclesList(activeSection);
+    }
+
+    if (activeSection === 'CONTROLE_TECHNIQUE') {
+       return renderControleTechnique();
+    }
+
+    return (
+      <div className="grid grid-cols-1 gap-4 mt-6">
+         <button 
+           onClick={() => setActiveSection('VIGNETTE')}
+           className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-50 flex items-center justify-between hover:-translate-y-1 transition-transform group"
+         >
+            <div className="flex items-center gap-5">
+               <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center">
+                  <FileText className="w-7 h-7 text-blue-600" />
+               </div>
+               <div className="flex flex-col items-start">
+                  <span className="font-black text-[#1e3b6a] text-lg">Vignette</span>
+                  <span className="text-xs text-[#1e3b6a]/50 font-bold uppercase tracking-widest mt-0.5">Renouvellement annuel</span>
+               </div>
+            </div>
+            <ChevronRight className="w-6 h-6 text-gray-300 group-hover:text-[#e9b11e] transition-colors" />
+         </button>
+
+         <button 
+           onClick={() => setActiveSection('ASSURANCE')}
+           className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-50 flex items-center justify-between hover:-translate-y-1 transition-transform group"
+         >
+            <div className="flex items-center gap-5">
+               <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center">
+                  <ShieldCheck className="w-7 h-7 text-green-600" />
+               </div>
+               <div className="flex flex-col items-start">
+                  <span className="font-black text-[#1e3b6a] text-lg">Assurance</span>
+                  <span className="text-xs text-[#1e3b6a]/50 font-bold uppercase tracking-widest mt-0.5">Couverture véhicule</span>
+               </div>
+            </div>
+            <ChevronRight className="w-6 h-6 text-gray-300 group-hover:text-[#e9b11e] transition-colors" />
+         </button>
+
+         <button 
+           onClick={() => setActiveSection('CONTROLE_TECHNIQUE')}
+           className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-50 flex items-center justify-between hover:-translate-y-1 transition-transform group"
+         >
+            <div className="flex items-center gap-5">
+               <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center">
+                  <AlertCircle className="w-7 h-7 text-orange-500" />
+               </div>
+               <div className="flex flex-col items-start">
+                  <span className="font-black text-[#1e3b6a] text-lg">Contrôle Technique</span>
+                  <span className="text-xs text-[#1e3b6a]/50 font-bold uppercase tracking-widest mt-0.5">Inspection périodique</span>
+               </div>
+            </div>
+            <ChevronRight className="w-6 h-6 text-gray-300 group-hover:text-[#e9b11e] transition-colors" />
+         </button>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-[#f8fbff]">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (showPaymentFlow) {
+    return (
+      <main className="w-full min-h-screen bg-white flex flex-col relative overflow-hidden">
+         {renderPaymentPage()}
+      </main>
+    );
+  }
+
+  return (
+    <main className="w-full min-h-screen bg-[#f8fbff] flex flex-col relative overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
+      {/* HEADER */}
+      <div className="bg-[#1e3b6a] pt-12 pb-6 px-6 md:px-12 lg:px-24 shrink-0">
+         <div className="flex items-center gap-4 mb-8">
+            <button onClick={() => router.back()} className="bg-white/10 p-2 rounded-full hover:bg-white/20 transition">
+              <ChevronLeft className="w-6 h-6 text-white" />
+            </button>
+            <h1 className="text-2xl font-black text-white tracking-tight">Statut Fiscal</h1>
+         </div>
+
+         {/* TABS */}
+         <div className="bg-black/20 p-1.5 rounded-2xl flex relative">
+            <button 
+              onClick={() => { setActiveTab('OBLIGATIONS'); setActiveSection(null); }}
+              className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all relative z-10 ${activeTab === 'OBLIGATIONS' ? 'text-[#1e3b6a]' : 'text-white/60 hover:text-white'}`}
+            >
+               Obligations Routières
+            </button>
+            <button 
+              onClick={() => { setActiveTab('AMENDES'); setActiveSection(null); }}
+              className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all relative z-10 ${activeTab === 'AMENDES' ? 'text-[#1e3b6a]' : 'text-white/60 hover:text-white'}`}
+            >
+               Amendes (0)
+            </button>
+
+            {/* Tab gliding background */}
+            <div 
+               className="absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-[#e9b11e] rounded-xl transition-all duration-300"
+               style={{ left: activeTab === 'OBLIGATIONS' ? '6px' : 'calc(50%)' }}
+            ></div>
+         </div>
+      </div>
+
+      <div className="flex-1 px-6 md:px-12 lg:px-24 pb-20 relative">
+         {renderSectionContent()}
+         
+         {toastMessage && (
+           <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-5 w-max max-w-[90%] text-center">
+              {toastMessage}
+           </div>
+         )}
+      </div>
+    </main>
+  );
+}

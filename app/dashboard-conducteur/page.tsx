@@ -12,6 +12,7 @@ import { conducteurService } from "@/services/conducteurs";
 import { Conducteur, Vehicule, Amende } from "@/types";
 import { VehiclePreviewModal } from "@/components/VehiclePreviewModal";
 import { SuccessToast } from "@/components/ui/toast";
+import { getUsageIllustration } from "@/utils/vehicleUtils";
 
 // Interface for a vehicle combined with its associated drivers' photos
 interface VehiculeWithPhotos extends Vehicule {
@@ -36,9 +37,18 @@ export default function DashboardConducteur() {
   const [errorLink, setErrorLink] = useState("");
   const [showToast, setShowToast] = useState(false);
 
-  // States to evaluate account health
   const [hasAlerts, setHasAlerts] = useState(false);
-  const [alertMessage, setAlertMessage] = useState<string>("");
+  const [alertsArray, setAlertsArray] = useState<string[]>([]);
+  const [currentAlertIndex, setCurrentAlertIndex] = useState(0);
+
+  useEffect(() => {
+    if (alertsArray.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentAlertIndex((prev) => (prev + 1) % alertsArray.length);
+      }, 3500);
+      return () => clearInterval(interval);
+    }
+  }, [alertsArray]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -97,44 +107,35 @@ export default function DashboardConducteur() {
 
   const evaluateAccountHealth = (amendesList: Amende[], vehiculesList: VehiculeWithPhotos[]) => {
     const unpaidAmendes = amendesList.filter(a => a.statut !== 'PAYEE');
+    const alerts: string[] = [];
+
     if (unpaidAmendes.length > 0) {
-      setHasAlerts(true);
-      setAlertMessage(`Vous avez ${unpaidAmendes.length} amende(s) impayée(s).`);
-      return;
+      alerts.push(`${unpaidAmendes.length} amende(s) impayée(s)`);
     }
 
-    // Check expiration of the first vehicle as an example (since no complex logic specified)
     const today = new Date();
-    let alertFound = false;
 
     for (const v of vehiculesList) {
-      if (v.date_expiration_vignette) {
-        const expVignette = new Date(v.date_expiration_vignette);
-        if (expVignette < today) {
-          setHasAlerts(true);
-          setAlertMessage(`La vignette du véhicule ${v.plaque} a expiré.`);
-          alertFound = true;
-          break;
-        }
+      if (v.date_expiration_vignette && new Date(v.date_expiration_vignette) < today) {
+        alerts.push(`Vignette exp. (${v.plaque})`);
       }
-      if (v.date_expiration_assurance) {
-        const expAssurance = new Date(v.date_expiration_assurance);
-        if (expAssurance < today) {
-          setHasAlerts(true);
-          setAlertMessage(`L'assurance du véhicule ${v.plaque} a expiré.`);
-          alertFound = true;
-          break;
-        }
+      if (v.date_expiration_assurance && new Date(v.date_expiration_assurance) < today) {
+        alerts.push(`Assurance exp. (${v.plaque})`);
+      }
+      if (v.date_prochain_controle && new Date(v.date_prochain_controle) < today) {
+        alerts.push(`Contrôle Tech. exp. (${v.plaque})`);
       }
     }
 
-    if (!alertFound) {
+    if (alerts.length > 0) {
+      setHasAlerts(true);
+      setAlertsArray(alerts);
+    } else {
       setHasAlerts(false);
-      // Ensure we keep this message accurate depending on the UI requests!
       if (vehiculesList.length === 0) {
-        setAlertMessage("Vous n'avez pas d'informations de véhicules enregistrés.\nVeuillez lier un véhicule pour circuler tranquillement.");
+        setAlertsArray(["Aucun véhicule lié. Ajoutez-en un."]);
       } else {
-        setAlertMessage("Vous n'avez pas d'informations d'amende.\nVotre compte n'a pas de problème.\nMettez les informations de vos véhicules et commencez à circuler tranquillement.");
+        setAlertsArray(["Tout est en règle."]);
       }
     }
   };
@@ -225,235 +226,229 @@ export default function DashboardConducteur() {
         }
       `}} />
 
-      {/* Main Responsive Web Frame */}
-      <main className="w-full max-w-none sm:max-w-5xl bg-white sm:shadow-2xl relative overflow-hidden sm:rounded-[3rem] min-h-screen sm:min-h-[850px] flex flex-col pb-6 mx-auto">
+      {/* Main Responsive Frame - Full Width Fill Screen */}
+      <main className="w-full bg-white flex flex-col min-h-screen animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
+        
+        {/* TOP SECTION */}
+        <div className="flex-none flex flex-col">
+          
+          {/* Yellow Header Section */}
+          <section className="bg-[#e9b11e] rounded-b-[2rem] pt-12 pb-24 px-6 md:px-12 lg:px-24 relative shrink-0">
+            
+            {/* Logout Button (top left) */}
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
+              className="absolute top-10 left-6 outline-none hover:scale-105 transition-transform"
+            >
+              <div className="relative bg-white/20 p-2 rounded-full">
+                <LogOut className="w-5 h-5 text-black" strokeWidth={2} />
+              </div>
+            </button>
 
-        {/* Yellow Header Section (Spans fully at top) */}
-        <section className="bg-[#e9b11e] rounded-b-[3.5rem] pt-12 pb-28 px-6 sm:px-12 relative shrink-0">
+            {/* Notifications Icon (top right) */}
+            <button className="absolute top-10 right-6 outline-none hover:scale-105 transition-transform">
+               <div className="relative bg-white/20 p-2 rounded-full">
+                 <Bell className="w-5 h-5 text-black" strokeWidth={2} />
+                 {hasAlerts && <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#e9b11e]"></div>}
+               </div>
+            </button>
 
-          {/* Logout Button (top left) */}
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="absolute top-10 left-6 sm:left-12 outline-none hover:scale-105 transition-transform"
-          >
-            <div className="relative bg-white/25 p-2.5 rounded-full backdrop-blur-md border border-white/20 hover:bg-white/40 transition-colors">
-              <LogOut className="w-6 h-6 text-black" strokeWidth={2.5} />
-            </div>
-          </button>
+            <div className="flex gap-4 items-start pr-8">
+              {/* Photo Cadre */}
+              <div className="w-20 h-20 rounded-full bg-white border-[3px] border-white shadow-xl overflow-hidden shrink-0 mt-1 object-cover">
+                 {conducteur.photo ? (
+                   <img src={conducteur.photo} alt="Profile" className="w-full h-full object-cover" />
+                 ) : (
+                   <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                      <AlertCircle className="text-gray-400 w-6 h-6" />
+                   </div>
+                 )}
+              </div>
 
-          {/* Notifications Icon (top right) */}
-          <button className="absolute top-10 right-6 sm:right-10 outline-none hover:scale-105 transition-transform">
-            <div className="relative bg-white/25 p-2.5 rounded-full backdrop-blur-md border border-white/20">
-              <Bell className="w-6 h-6 text-black" strokeWidth={2.5} />
-              {hasAlerts && <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-[#e9b11e] shadow-sm"></div>}
-            </div>
-          </button>
-
-          <div className="flex flex-col sm:flex-row gap-6 sm:gap-10 sm:items-center mt-4">
-            {/* Photo Cadre */}
-            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white border-4 border-white shadow-xl overflow-hidden shrink-0 object-cover">
-              {conducteur.photo ? (
-                <img src={conducteur.photo} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                  <AlertCircle className="text-gray-400 w-8 h-8" />
+              {/* Main Info */}
+              <div className="flex flex-col flex-1">
+                <h1 className="text-2xl font-black font-serif text-black tracking-tight leading-none mb-1">
+                  {conducteur.prenom} {conducteur.nom}
+                </h1>
+                <p className="text-xs font-bold text-black/80">
+                  Permis : {conducteur.numero_permis}
+                </p>
+                
+                <div className="relative mt-2 h-14 w-full">
+                   <textarea 
+                     disabled
+                     placeholder="Description..."
+                     className="w-full h-full resize-none border-2 border-dashed border-black/40 rounded-t-xl rounded-br-xl bg-transparent p-2 text-xs text-black/80 font-medium"
+                   />
                 </div>
-              )}
-            </div>
-
-            {/* Main Info */}
-            <div className="flex flex-col flex-1">
-              <h1 className="text-3xl sm:text-4xl font-black font-serif text-black tracking-tight leading-none mb-2">
-                {conducteur.prenom} {conducteur.nom}
-              </h1>
-              <p className="text-sm sm:text-base font-bold text-black/80">
-                Permis : {conducteur.numero_permis}
-              </p>
-
-              <div className="relative mt-4 h-16 w-full max-w-md">
-                <textarea
-                  disabled
-                  placeholder="Description..."
-                  className="w-full h-full resize-none border-2 border-dashed border-black/40 rounded-t-xl rounded-br-xl bg-transparent p-3 text-sm text-black/80 font-medium"
-                />
               </div>
             </div>
 
-            <div className="sm:ml-auto flex sm:flex-col items-center gap-4 sm:gap-4 mt-2 sm:mt-0">
-              <button
-                onClick={() => setShowQR(!showQR)}
-                className="bg-white p-4 rounded-[1.5rem] shadow-md hover:scale-105 transition-transform hover:shadow-lg flex items-center justify-center"
+            <div className="mt-4 flex justify-end gap-3 px-2">
+              <button 
+                 onClick={() => setShowQR(!showQR)}
+                 className="bg-white p-3 rounded-2xl shadow-sm hover:scale-105 transition-transform flex items-center justify-center"
               >
-                <ScanLine className="w-7 h-7 text-black" />
+                <ScanLine className="w-5 h-5 text-black" />
               </button>
-              <button className="bg-white px-8 py-4 rounded-[1.5rem] shadow-md hover:bg-gray-50 font-black text-sm tracking-widest uppercase text-black transition-all hover:shadow-lg w-full sm:w-auto">
+              <button className="bg-white px-6 py-2 rounded-2xl shadow-sm hover:bg-gray-50 font-black text-xs tracking-widest uppercase text-black transition-all">
                 Contact
               </button>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Content area: Grid on Desktop, Column on Mobile */}
-        <div className="relative z-10 w-full shrink-0 grid grid-cols-1 md:grid-cols-12 gap-8 px-6 sm:px-12 -mt-16 pb-12">
-
-          {/* Left side: Infos Générales floating card & Quick Buttons */}
-          <div className="md:col-span-4 flex flex-col gap-8">
-
-            {/* General Info Card */}
-            <div className="bg-white rounded-3xl p-6 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] border border-gray-100 flex flex-col gap-3 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gray-50 rounded-bl-full -z-10"></div>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-[17px] font-black text-[#1e3b6a] tracking-tight">Infos générales</h2>
-                <button className="text-gray-400 hover:text-[#1e3b6a] transition-colors p-1 bg-gray-50 rounded-full">
+          {/* Floating General Info Card */}
+          <div className="px-5 md:px-12 lg:px-24 -mt-20 relative z-10 w-full shrink-0">
+            <h2 className="text-[14px] font-black text-[#1e3b6a] mb-2 px-1 tracking-tight">Infos générales</h2>
+            
+            <div className="bg-white rounded-3xl p-5 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] border border-gray-100 flex flex-col gap-2 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-20 h-20 bg-gray-50 rounded-bl-full -z-10"></div>
+               <button className="absolute top-4 right-4 text-gray-400 hover:text-[#1e3b6a] transition-colors p-1 bg-gray-50 rounded-full">
                   <Edit className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-2.5">
-                <div className="text-[13px] text-gray-700 font-medium">
-                  <span className="font-bold text-gray-900">Nationalité:</span> {conducteur.permis?.nationalite || "Congolaise"}
-                </div>
-                <div className="text-[13px] text-gray-700 font-medium">
-                  <span className="font-bold text-gray-900">Date de naissance :</span> {conducteur.permis?.date_naissance || "N/A"}
-                </div>
-                <div className="text-[13px] text-gray-700 font-medium">
-                  <span className="font-bold text-gray-900">Ecole de formation :</span> {conducteur.ecole_formation || "N/A"}
-                </div>
-                <div className="text-[13px] text-gray-700 font-medium">
-                  <span className="font-bold text-gray-900">Ville :</span> {conducteur.ville || "Kinshasa"}
-                </div>
-                <div className="text-[13px] text-gray-700 font-medium">
-                  <span className="font-bold text-gray-900">Commune:</span> {conducteur.commune || "N/A"}
-                </div>
-                <div className="text-[13px] text-gray-700 font-medium leading-relaxed">
-                  <span className="font-bold text-gray-900">Adresse :</span> {conducteur.adresse || "N/A"}
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Action Buttons */}
-            <div className="flex flex-row md:flex-col gap-3 md:mt-2">
-              <button className="flex-1 bg-[#1de140] hover:bg-[#18cc38] text-black px-4 py-3 sm:py-4 rounded-2xl flex items-center justify-center gap-2 font-bold shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
-                <ArrowDown className="w-5 h-5 opacity-70" /> Statut fiscal
-              </button>
-              <button className="flex-1 bg-[#f4b616] hover:bg-[#e6a800] text-black px-4 py-3 sm:py-4 rounded-2xl flex justify-center items-center text-sm sm:text-base font-bold shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 text-center">
-                Expérience et casier
-              </button>
+               </button>
+               
+               <div className="space-y-1.5">
+                 <div className="text-[12px] text-gray-700 font-medium">
+                    <span className="font-bold text-gray-900">Nationalité:</span> {conducteur.permis?.nationalite || "Congolaise"}
+                 </div>
+                 <div className="text-[12px] text-gray-700 font-medium">
+                    <span className="font-bold text-gray-900">Date de naissance :</span> {conducteur.permis?.date_naissance || "N/A"}
+                 </div>
+                 <div className="text-[12px] text-gray-700 font-medium">
+                    <span className="font-bold text-gray-900">Ecole de formation :</span> {conducteur.ecole_formation || "N/A"}
+                 </div>
+                 <div className="text-[12px] text-gray-700 font-medium">
+                    <span className="font-bold text-gray-900">Ville / Commune:</span> {conducteur.ville || "Kinshasa"} - {conducteur.commune || ""}
+                 </div>
+                 <div className="text-[12px] text-gray-700 font-medium leading-tight truncate">
+                    <span className="font-bold text-gray-900">Adresse :</span> {conducteur.adresse || "N/A"}
+                 </div>
+               </div>
             </div>
           </div>
 
-          {/* Right side: Alerts and Vehicles */}
-          <div className="md:col-span-8 flex flex-col gap-10 md:mt-16">
-
-            {/* Account Status / Notifications */}
-            <div className="bg-[#f2f8ff] border-2 border-dashed border-[#84a9e1]/60 rounded-[2.5rem] p-6 sm:p-8 shadow-sm relative shrink-0 transition-all hover:shadow-md">
-              <div className="absolute -top-[14px] left-10 bg-white border border-[#e2eefa] shadow-md rounded-full px-6 py-1.5 text-xs text-[#1e3b6a] font-bold tracking-widest uppercase">
+          {/* Account Status / Notifications */}
+          <div className="mx-5 md:mx-12 lg:mx-24 mt-5 bg-[#f2f8ff] border-2 border-dashed border-[#84a9e1]/60 rounded-2xl p-4 relative shrink-0 shadow-sm transition-all">
+             <div className="absolute -top-[14px] left-6 bg-white border border-[#e2eefa] shadow-sm rounded-full px-4 py-1.5 text-[10px] text-[#1e3b6a] font-bold tracking-wide uppercase">
                 État de validité
-              </div>
+             </div>
+             
+             {hasAlerts ? (
+               <div className="pt-2 pb-1 flex items-start gap-3 relative overflow-hidden h-12">
+                 <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-red-100 mt-0.5">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                 </div>
+                 <div className="flex-1 min-w-0 relative h-full">
+                   {alertsArray.map((alert, idx) => (
+                     <div key={idx} 
+                      className={`absolute top-0 left-0 w-full transition-all duration-500 transform ${idx === currentAlertIndex ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0 pointer-events-none'}`}>
+                       <p className="text-red-600 font-bold text-xs leading-snug truncate">
+                          {alert}
+                       </p>
+                       <p className="text-red-500 font-medium text-[10px] mt-1 leading-snug">
+                          Veuillez régulariser cette situation.
+                       </p>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             ) : (
+               <div className="pt-2 pb-1 flex items-center gap-3">
+                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-4 h-4 text-[#1e3b6a]" />
+                 </div>
+                 <div className="text-[#1e3b6a] text-xs font-semibold leading-relaxed whitespace-normal break-words">
+                    {alertsArray[0] || "Tout est en règle."}
+                 </div>
+               </div>
+             )}
+          </div>
 
-              {hasAlerts ? (
-                <div className="text-center sm:text-left pt-2 pb-1 flex flex-col sm:flex-row sm:items-center gap-6">
-                  <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center shrink-0 mx-auto sm:mx-0 shadow-inner">
-                    <AlertCircle className="w-7 h-7 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-red-600 font-bold text-sm">
-                      {alertMessage.split('.')[0]}.
-                    </p>
-                    <p className="text-red-500 font-medium text-xs mt-1 leading-snug">
-                      {alertMessage.split('.')[1] || "Veuillez vous assurer d'être en règle pour circuler en toute tranquillité."}
-                    </p>
-                  </div>
+          {/* Buttons Section (Statut fiscal & Expérience) */}
+          <div className="flex justify-between items-center px-5 md:px-12 lg:px-24 mt-5 gap-3 shrink-0">
+            <button 
+               onClick={() => router.push('/statut-fiscal')}
+               className="flex-1 bg-[#1de140] hover:bg-[#18cc38] text-black px-3 py-3 rounded-xl flex items-center justify-center gap-1.5 font-bold shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+            >
+               <ArrowDown className="w-4 h-4 opacity-70" /> 
+               <span className="text-sm">Statut fiscal</span>
+            </button>
+            <button className="flex-1 bg-[#f4b616] hover:bg-[#e6a800] text-black px-3 py-3 rounded-xl flex justify-center text-sm font-bold shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 text-center">
+               Expérience et casier
+            </button>
+          </div>
+          
+          <h2 className="text-[14px] font-black text-gray-800 tracking-tight ml-5 md:ml-12 lg:ml-24 mt-5 mb-1 px-1">Flotte Actuelle</h2>
+        </div>
+
+        {/* BOTTOM SECTION */}
+        <div className="w-full px-5 md:px-12 lg:px-24 pb-8 flex flex-col gap-4 mt-2">
+
+           {/* Vehicles Stacked List */}
+           {vehicules.length > 0 && vehicules.map((v, idx) => {
+             const today = new Date();
+             const vignetteOk = v.date_expiration_vignette ? new Date(v.date_expiration_vignette) >= today : false;
+             const assOk = v.date_expiration_assurance ? new Date(v.date_expiration_assurance) >= today : false;
+             const ctOk = v.date_prochain_controle ? new Date(v.date_prochain_controle) >= today : false;
+
+             return (
+              <div key={v.id} className="w-full bg-white rounded-3xl p-3 sm:p-5 shadow-sm border border-gray-100 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-5 relative transition-all hover:shadow-md animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both" style={{ animationDelay: `${idx * 100}ms` }}>
+                
+                {/* Vehicle Image */}
+                <div className="w-16 h-16 sm:w-24 sm:h-24 shrink-0 flex items-center justify-center p-1">
+                   <img src={getUsageIllustration(v.usage_categorie || 'Privé')} alt={v.marque} className="w-full h-full object-contain drop-shadow-sm" />
                 </div>
-              ) : (
-                <div className="text-center sm:text-left pt-2 pb-1 flex flex-col sm:flex-row sm:items-center gap-6">
-                  <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center shrink-0 mx-auto sm:mx-0 shadow-inner">
-                    <CheckCircle2 className="w-7 h-7 text-[#1E3A8A]" />
-                  </div>
-                  <div className="text-[#1e3b6a] text-xs font-semibold leading-relaxed">
-                    {alertMessage.split('\n').map((line, i) => (
-                      <p key={i}>{line}</p>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
 
-            {/* Vehicles Stacked List */}
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2 ml-2 mb-1">
-                <Car className="w-5 h-5 text-gray-400" />
-                <h2 className="text-lg font-black text-gray-800 tracking-tight">Véhicules enregistrés</h2>
-              </div>
-
-              {vehicules.length > 0 && vehicules.map((v) => (
-                <div key={v.id} className="w-full bg-white rounded-3xl p-5 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.1)] border border-gray-100 flex flex-col sm:flex-row sm:items-center gap-5 relative overflow-hidden transition-all hover:shadow-[0_8px_30px_-8px_rgba(0,0,0,0.15)] hover:-translate-y-0.5 group">
-
-                  {/* Vehicle Image Placeholder */}
-                  <div className="w-full sm:w-32 h-40 sm:h-32 shrink-0 bg-[#f8fbff] rounded-[2rem] flex items-center justify-center border-2 border-[#e6effa] group-hover:border-[#caddff] transition-colors shadow-inner">
-                    {v.usage_categorie?.toUpperCase().includes('MOTO') ? (
-                      <Bike className="w-16 h-16 text-[#4a72ba]" strokeWidth={1} />
-                    ) : (
-                      <Car className="w-16 h-16 text-[#4a72ba]" strokeWidth={1} />
-                    )}
-                  </div>
-
-                  {/* Vehicle Info */}
-                  <div className="flex-1 flex flex-col justify-center min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-black text-[#1e3b6a] text-[17px] truncate">{v.marque} {v.modele}</h4>
-                      <span className="text-[11px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-widest border border-blue-100 ml-2">
-                        {v.plaque}
-                      </span>
-                    </div>
-
-                    <div className="flex gap-4 mt-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-green-400"></div> Assurance</div>
-                      <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-green-400"></div> Insp. Tech</div>
-                      <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-red-400"></div> vignette</div>
-                    </div>
-
-                    {/* Conducteurs associés */}
-                    {v.photosAssociees && v.photosAssociees.length > 0 && (
-                      <div className="flex items-center gap-2 mt-4">
-                        <span className="text-[10px] font-bold text-gray-400">Co-Pilotes:</span>
-                        <div className="flex -space-x-2">
-                          {v.photosAssociees.map((photo, i) => (
-                            <div key={i} className="w-7 h-7 rounded-full bg-gray-200 border-2 border-white overflow-hidden shadow-sm hover:z-10 hover:scale-110 transition-transform cursor-pointer">
-                              <img src={photo} alt="" className="w-full h-full object-cover" />
-                            </div>
-                          ))}
-                        </div>
+                {/* Vehicle Info */}
+                <div className="flex-1 flex flex-col min-w-[150px]">
+                   <div className="flex items-center gap-2 flex-wrap">
+                     <h4 className="font-black text-[#1e3b6a] text-sm sm:text-lg leading-none">{v.marque} <span className="text-gray-500 font-semibold">{v.modele}</span></h4>
+                     <span className="text-[9px] sm:text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase tracking-widest leading-none whitespace-nowrap">
+                       {v.plaque}
+                     </span>
+                   </div>
+                   
+                   {/* Fiscal Indicators */}
+                   <div className="flex items-center flex-wrap gap-x-2 sm:gap-x-3 gap-y-1 mt-2 sm:mt-4">
+                      <div className="flex items-center gap-1 sm:gap-1.5">
+                         <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${assOk ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                         <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">ASSURANCE</span>
                       </div>
-                    )}
-                  </div>
+                      <div className="flex items-center gap-1 sm:gap-1.5">
+                         <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${ctOk ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                         <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">INSP. TECH</span>
+                      </div>
+                      <div className="flex items-center gap-1 sm:gap-1.5">
+                         <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${vignetteOk ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                         <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">VIGNETTE</span>
+                      </div>
+                   </div>
+                </div>
 
-                  <button className="w-full sm:w-auto mt-4 sm:mt-0 bg-[#0051ff] text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-blue-500/30 shrink-0 hover:bg-blue-700 hover:scale-105 transition-all">
-                    Voir Fiche
+                <div className="w-full sm:w-auto flex justify-end shrink-0 sm:pl-2 mt-1 sm:mt-0">
+                  <button className="bg-[#0b5cff] text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black shadow-md hover:bg-blue-700 transition-colors uppercase tracking-widest whitespace-nowrap">
+                     VOIR FICHE
                   </button>
                 </div>
-              ))}
+              </div>
+             );
+           })}
 
-              {/* Add Vehicle Animated Button */}
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="w-full h-40 sm:h-32 bg-gradient-to-br from-[#eef4ff] to-[#f8fbff] rounded-[2.5rem] p-8 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-6 shadow-sm hover:shadow-lg transition-all relative overflow-hidden group mt-4 border-2 border-dashed border-[#caddff] hover:border-[#8ab3f9] hover:-translate-y-1"
-              >
-                <div className="flex flex-col items-center sm:items-start z-10">
-                  <span className="text-xl sm:text-2xl font-black tracking-tight text-[#1e3b6a]">Ajouter un véhicule</span>
-                  <span className="text-xs font-bold text-[#1e3b6a]/50 uppercase tracking-widest mt-1">Liez vos documents en quelques secondes</span>
-                </div>
-
-                {/* Animations Circle */}
-                <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center relative shadow-xl z-10 shrink-0 transform group-hover:rotate-12 transition-transform">
-                  <span className="text-blue-600 text-3xl font-black z-20 absolute mt-0.5">+</span>
-                  {/* Animated Icons */}
-                  <Car className="w-10 h-10 text-[#1e3b6a]/30 absolute anim-car" strokeWidth={1.5} />
-                  <Bike className="w-10 h-10 text-[#1e3b6a]/30 absolute anim-moto" strokeWidth={1.5} />
-                </div>
-              </button>
-            </div>
-          </div>
+           {/* Add Vehicle Animated Button */}
+           <button 
+              onClick={() => setShowAddModal(true)}
+              className="w-full h-24 bg-gradient-to-r from-[#eef4ff] to-[#f8fbff] rounded-3xl p-4 flex items-center justify-between gap-4 shadow-[#cfdeff]/20 shadow-xl relative overflow-hidden group border-2 border-dashed border-[#caddff] hover:border-[#8ab3f9] shrink-0 mb-6"
+           >
+              <span className="text-[14px] font-black tracking-tight text-[#1e3b6a] z-10 w-full text-left">Associer une nouvelle unité</span>
+              
+              {/* Animations Circle */}
+              <div className="w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center relative shadow-sm z-10 shrink-0">
+                 <span className="text-blue-600 text-xl font-black z-20 absolute">+</span>
+                 {/* Animated Icons */}
+                 <Car className="w-6 h-6 text-[#1e3b6a]/20 absolute anim-car" strokeWidth={1.5} />
+                 <Bike className="w-6 h-6 text-[#1e3b6a]/20 absolute anim-moto" strokeWidth={1.5} />
+              </div>
+           </button>
         </div>
       </main>
 
