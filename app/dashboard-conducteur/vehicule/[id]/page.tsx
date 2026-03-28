@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { conducteurService } from '@/services/conducteurs';
 import { Vehicule, Conducteur } from '@/types';
 import { getUsageIllustration } from '@/utils/vehicleUtils';
-import { ChevronLeft, QrCode, Download, Trash2, Users, FileText, Settings, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, QrCode, Download, Trash2, Users, FileText, Settings, ShieldCheck, AlertTriangle } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { authService } from '@/services/auth';
 
