@@ -140,6 +140,17 @@ export const conducteurService = {
     return data;
   },
 
+  async getVehiculeById(id: string): Promise<Vehicule | null> {
+    const { data, error } = await supabase
+      .from('vehicules')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
   async lierVehicule(conducteurId: string, vehiculeId: string) {
     const { error } = await supabase
       .from('conducteur_vehicule')
@@ -154,6 +165,16 @@ export const conducteurService = {
       }
       throw error;
     }
+  },
+
+  async dissocierVehicule(conducteurId: string, vehiculeId: string) {
+    const { error } = await supabase
+      .from('conducteur_vehicule')
+      .delete()
+      .eq('conducteur_id', conducteurId)
+      .eq('vehicule_id', vehiculeId);
+
+    if (error) throw error;
   },
 
   async isVehiculeLinked(conducteurId: string, vehiculeId: string): Promise<boolean> {
@@ -191,5 +212,28 @@ export const conducteurService = {
       .filter(Boolean); // Filter out nulls/undefined
 
     return photos;
+  },
+
+  async getProfilsAssocies(vehiculeId: string, currentConducteurId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('conducteur_vehicule')
+      .select(`
+        conducteurs (
+          id,
+          nom,
+          postnom,
+          prenom,
+          photo
+        )
+      `)
+      .eq('vehicule_id', vehiculeId)
+      .neq('conducteur_id', currentConducteurId);
+
+    if (error) {
+      console.error("Error fetching associated drivers profiles", error);
+      return [];
+    }
+
+    return data.map((item: any) => item.conducteurs).filter(Boolean);
   }
 };

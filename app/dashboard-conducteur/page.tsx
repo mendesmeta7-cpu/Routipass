@@ -426,7 +426,7 @@ export default function DashboardConducteur() {
                 </div>
 
                 <div className="w-full sm:w-auto flex justify-end shrink-0 sm:pl-2 mt-1 sm:mt-0">
-                  <button className="bg-[#0b5cff] text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black shadow-md hover:bg-blue-700 transition-colors uppercase tracking-widest whitespace-nowrap">
+                  <button onClick={() => router.push(`/dashboard-conducteur/vehicule/${v.id}`)} className="bg-[#0b5cff] text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black shadow-md hover:bg-blue-700 transition-colors uppercase tracking-widest whitespace-nowrap">
                      VOIR FICHE
                   </button>
                 </div>
