@@ -39,7 +39,7 @@ export default function FicheVehiculePage() {
         if (user.user_metadata?.role === 'DRIVER' && user.user_metadata?.driver_id) {
           const dData = await conducteurService.getProfileByDriverId(user.user_metadata.driver_id);
           if (dData) driverIdStr = dData.id;
-        } else if (user.role === 'DRIVER') {
+        } else if ((user as any).role === 'DRIVER') {
           driverIdStr = user.id; // from localStorage
         }
 
