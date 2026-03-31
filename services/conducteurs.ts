@@ -143,7 +143,7 @@ export const conducteurService = {
       .from('fines_issued')
       .select('*, fine_types(*), vehicules(*)')
       .eq('conducteur_id', conducteurId)
-      .order('created_at', { ascending: false });
+      .order('date_emission', { ascending: false });
 
     if (error) throw error;
     return data;

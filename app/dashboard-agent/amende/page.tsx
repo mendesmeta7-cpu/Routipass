@@ -54,12 +54,24 @@ function AmendeFormContent() {
       // 1. Get Agent Session
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Find agent by Auth ID OR Email
         const { data: agentData } = await supabase
           .from('agents')
           .select('*')
-          .eq('email', user.email)
-          .single();
-        setAgent(agentData);
+          .or(`id.eq.${user.id},email.eq.${user.email}`)
+          .maybeSingle();
+        
+        if (agentData) {
+          setAgent(agentData);
+        } else {
+          // Fallback to metadata with multiple possible keys
+          setAgent({
+            id: user.id, // Ensure we have a UUID for the DB
+            nom: user.user_metadata?.nom || user.user_metadata?.full_name || "Officier PNC",
+            matricule: user.user_metadata?.matricule || user.user_metadata?.agent_id || "ID-ACTIVE",
+            agent_id: user.user_metadata?.agent_id || user.user_metadata?.matricule || user.id
+          });
+        }
       }
 
       // 2. Get Driver
@@ -129,8 +141,8 @@ function AmendeFormContent() {
 
     const amendeData = {
       agent_id: agent?.id,
-      agent_nom: `${agent?.nom} ${agent?.postnom}`,
-      agent_matricule: agent?.matricule || agent?.agent_id,
+      agent_nom: agent?.nom ? `${agent.nom} ${agent.postnom || ''}`.trim() : 'Officier PNC',
+      agent_matricule: agent?.matricule || agent?.agent_id || agent?.agentId || 'ID-ACTIVE',
       conducteur_id: driver?.id,
       conducteur_nom: driver?.permis ? `${driver.permis.nom} ${driver.permis.prenom}` : "Conducteur Inconnu",
       vehicule_id: vehicule?.id,
@@ -175,9 +187,10 @@ function AmendeFormContent() {
              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0">
                <ShieldCheck className="w-5 h-5" />
              </div>
-             <div>
+             <div className="min-w-0">
                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Agent / Matricule</p>
-               <p className="text-xs font-black text-slate-900 truncate max-w-[100px]">{agent?.matricule || agent?.agent_id || 'Session Active'}</p>
+               <p className="text-xs font-black text-slate-900 truncate uppercase">{agent?.nom || 'Officier PNC'}</p>
+               <p className="text-[10px] font-bold text-blue-600 truncate">{agent?.matricule || agent?.agent_id || agent?.agentId || 'ID Actif'}</p>
              </div>
           </div>
           <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">

@@ -95,7 +95,8 @@ export default function AmendeRecapPage() {
         lieu_gps: data.lieu_gps,
         remarques: remarques,
         photo_url: photoUrl,
-        statut: 'INPAYEE'
+        statut: 'INPAYEE',
+        date_emission: data.date_emission
       };
 
       const { error: insertError } = await supabase

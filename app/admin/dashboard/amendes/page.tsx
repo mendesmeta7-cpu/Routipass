@@ -43,26 +43,34 @@ export default function AmendesList() {
     // 1. Fetch total paid for the current year
     const startOfYear = new Date(new Date().getFullYear(), 0, 1).toISOString();
     const { data: paidData } = await supabase
-      .from('amendes')
+      .from('fines_issued')
       .select('montant')
       .eq('statut', 'PAYEE')
-      .gte('date_creation', startOfYear);
+      .gte('date_emission', startOfYear);
     
     const total = paidData?.reduce((acc, curr) => acc + (Number(curr.montant) || 0), 0) || 0;
     setAnnualTotal(total);
 
     // 2. Fetch all amendes with relations
     const { data, error } = await supabase
-      .from('amendes')
+      .from('fines_issued')
       .select(`
-        id, motif, montant, devise, statut, date_creation,
+        id, nature_infraction, montant, devise, statut, date_emission,
         agents(nom, postnom),
         conducteurs(permis(nom, prenom)),
         vehicules(plaque)
       `)
-      .order('date_creation', { ascending: false });
+      .order('date_emission', { ascending: false });
 
-    if (data) setAmendes(data as any);
+    if (data) {
+      // Map to the existing AmendeType interface
+      const mappedData = data.map((item: any) => ({
+        ...item,
+        motif: item.nature_infraction,
+        date_creation: item.date_emission
+      }));
+      setAmendes(mappedData);
+    }
     setLoading(false);
   };
 
@@ -168,8 +176,8 @@ export default function AmendesList() {
                           <div className="w-8 h-8 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center text-[10px] font-bold">
                             <ShieldCheck className="w-4 h-4" />
                           </div>
-                          <div className="text-[11px] font-bold text-slate-700">
-                            {amende.agents?.nom} {amende.agents?.postnom}
+                          <div className="text-[11px] font-bold text-slate-700 uppercase">
+                            {amende.agents?.nom ? `${amende.agents.nom} ${amende.agents.postnom || ''}` : 'AGENT PNC / NON SPÉCIFIÉ'}
                           </div>
                         </div>
                       </td>

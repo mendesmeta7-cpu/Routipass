@@ -79,9 +79,18 @@ export default function ScanVerificationPage() {
   }
 
   const today = new Date();
-  const vignetteOk = vehicule.date_expiration_vignette ? new Date(vehicule.date_expiration_vignette) >= today : false;
-  const assOk = vehicule.date_expiration_assurance ? new Date(vehicule.date_expiration_assurance) >= today : false;
-  const ctOk = vehicule.date_prochain_controle ? new Date(vehicule.date_prochain_controle) >= today : false;
+  today.setHours(0, 0, 0, 0);
+
+  const checkDate = (dateStr: string | null) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
+    return d >= today;
+  };
+
+  const vignetteOk = checkDate(vehicule.date_expiration_vignette);
+  const assOk = checkDate(vehicule.date_expiration_assurance);
+  const ctOk = checkDate(vehicule.date_prochain_controle);
 
   const toutValide = vignetteOk && assOk && ctOk;
 
@@ -89,11 +98,15 @@ export default function ScanVerificationPage() {
     <main className="w-full min-h-screen bg-[#f8fbff] flex flex-col relative overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
       
       {/* HEADER STATUS */}
-      <div className={`pt-12 pb-24 px-6 md:px-12 lg:px-24 shrink-0 relative rounded-b-[2.5rem] transition-colors ${toutValide ? 'bg-green-500' : 'bg-red-500'}`}>
+      <div className={`pt-12 pb-24 px-6 md:px-12 lg:px-24 shrink-0 relative rounded-b-[3rem] transition-all duration-700 ${toutValide ? 'bg-emerald-500 shadow-xl shadow-emerald-100' : 'bg-rose-600 shadow-xl shadow-rose-100'}`}>
          <div className="flex flex-col items-center text-center mt-4 text-white">
-            <ShieldCheck className="w-16 h-16 mb-4 opacity-90" />
-            <h1 className="text-2xl font-black tracking-tight">{toutValide ? 'Contrôle Valide' : 'Alerte Fiscale'}</h1>
-            <p className="text-white/80 font-medium mt-1 uppercase tracking-widest text-xs">Vérification Instantanée</p>
+            {toutValide ? (
+              <ShieldCheck className="w-20 h-20 mb-4 animate-in zoom-in duration-500" />
+            ) : (
+              <ShieldAlert className="w-20 h-20 mb-4 animate-bounce" />
+            )}
+            <h1 className="text-3xl font-black tracking-tight">{toutValide ? 'Contrôle Valide' : 'Infraction Fiscale'}</h1>
+            <p className="text-white/80 font-bold mt-1 uppercase tracking-[0.3em] text-[10px]">Statut Temps Réel</p>
          </div>
       </div>
 
@@ -102,12 +115,19 @@ export default function ScanVerificationPage() {
          
          {/* BLOC CONDUCTEUR */}
          <div className="bg-white rounded-3xl p-5 shadow-lg border border-gray-100 flex items-center gap-4 relative">
-            <img src={driver.photo || '/avatar-placeholder.png'} alt={driver.nom} className="w-16 h-16 rounded-full object-cover border-2 border-gray-100 shadow-sm" />
+            <img src={driver.permis?.photo || driver.photo || '/avatar-placeholder.png'} alt={driver.permis?.nom || driver.nom} className="w-16 h-16 rounded-full object-cover border-2 border-gray-100 shadow-sm" />
             <div className="flex-1 min-w-0">
-               <h3 className="font-black text-[#1e3b6a] text-lg truncate leading-none mb-1">{driver.prenom} {driver.nom}</h3>
-               <span className="text-[10px] font-black text-gray-500 bg-gray-100 px-2 py-1 rounded-md uppercase tracking-widest">
-                  Permis: {driver.permis?.categorie_permis || 'Inconnu'}
-               </span>
+               <h3 className="font-black text-[#1e3b6a] text-lg truncate leading-none mb-1 uppercase">
+                  {driver.permis?.prenom || driver.prenom} {driver.permis?.nom || driver.nom}
+               </h3>
+               <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-gray-500 bg-gray-100 px-2 py-1 rounded-md uppercase tracking-widest">
+                     Permis {driver.permis?.categorie_permis || '??'}
+                  </span>
+                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase tracking-tight">
+                     N° {driver.permis?.numero_permis || 'Inconnu'}
+                  </span>
+               </div>
             </div>
             <button 
                onClick={() => router.push(`/conducteur-public/${driver.driver_id}`)}
@@ -135,22 +155,37 @@ export default function ScanVerificationPage() {
             <div className="w-full grid gap-3 mt-8">
                <div className={`p-4 rounded-2xl flex items-center justify-between border ${assOk ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
                   <span className={`font-black text-sm uppercase tracking-widest ${assOk ? 'text-green-700' : 'text-red-700'}`}>Assurance</span>
-                  <div className={`text-xs font-bold px-3 py-1.5 rounded-lg ${assOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                     {assOk ? 'VALIDE' : 'EXPIRÉ'}
+                  <div className="flex items-center gap-2">
+                     <span className="text-[10px] font-bold text-gray-500 opacity-60">
+                        {vehicule.date_expiration_assurance ? new Date(vehicule.date_expiration_assurance).toLocaleDateString('fr-FR') : '--/--/----'}
+                     </span>
+                     <div className={`text-xs font-bold px-3 py-1.5 rounded-lg ${assOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {assOk ? 'VALIDE' : 'EXPIRÉ'}
+                     </div>
                   </div>
                </div>
 
                <div className={`p-4 rounded-2xl flex items-center justify-between border ${ctOk ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
                   <span className={`font-black text-sm uppercase tracking-widest ${ctOk ? 'text-green-700' : 'text-red-700'}`}>Contrôle Tech.</span>
-                  <div className={`text-xs font-bold px-3 py-1.5 rounded-lg ${ctOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                     {ctOk ? 'VALIDE' : 'EXPIRÉ'}
+                  <div className="flex items-center gap-2">
+                     <span className="text-[10px] font-bold text-gray-400 opacity-60">
+                        {vehicule.date_prochain_controle ? new Date(vehicule.date_prochain_controle).toLocaleDateString('fr-FR') : '--/--/----'}
+                     </span>
+                     <div className={`text-xs font-bold px-3 py-1.5 rounded-lg ${ctOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {ctOk ? 'VALIDE' : 'EXPIRÉ'}
+                     </div>
                   </div>
                </div>
 
                <div className={`p-4 rounded-2xl flex items-center justify-between border ${vignetteOk ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
                   <span className={`font-black text-sm uppercase tracking-widest ${vignetteOk ? 'text-green-700' : 'text-red-700'}`}>Vignette</span>
-                  <div className={`text-xs font-bold px-3 py-1.5 rounded-lg ${vignetteOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                     {vignetteOk ? 'VALIDE' : 'EXPIRÉ'}
+                  <div className="flex items-center gap-2">
+                     <span className="text-[10px] font-bold text-gray-400 opacity-60">
+                        {vehicule.date_expiration_vignette ? new Date(vehicule.date_expiration_vignette).toLocaleDateString('fr-FR') : '--/--/----'}
+                     </span>
+                     <div className={`text-xs font-bold px-3 py-1.5 rounded-lg ${vignetteOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {vignetteOk ? 'VALIDE' : 'EXPIRÉ'}
+                     </div>
                   </div>
                </div>
             </div>

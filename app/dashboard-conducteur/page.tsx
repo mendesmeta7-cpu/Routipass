@@ -36,6 +36,7 @@ export default function DashboardConducteur() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [errorLink, setErrorLink] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Opération réussie !");
   const [showContactModal, setShowContactModal] = useState(false);
   const [updatingContact, setUpdatingContact] = useState(false);
   const [newEmail, setNewEmail] = useState("");
@@ -208,6 +209,7 @@ export default function DashboardConducteur() {
       setVehiculeRecherche(null);
       setShowPreview(false);
       setPlaque("");
+      setToastMessage("Véhicule associé avec succès !");
       setShowToast(true);
     } catch (error: any) {
       console.error(error);
@@ -571,7 +573,7 @@ export default function DashboardConducteur() {
       />
 
       <SuccessToast
-        message="Opération réussie !"
+        message={toastMessage}
         isVisible={showToast}
         onClose={() => setShowToast(false)}
       />

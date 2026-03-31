@@ -96,15 +96,21 @@ export default function StatutFiscal() {
     const isVignette = activeSection === 'VIGNETTE';
     const isAmende = activeSection === 'AMENDE';
     
-    const amount = isAmende ? (selectedFine?.amount || 0) : isVignette ? (vehicule?.montant_vignette || 0) : (vehicule?.montant_assurance || 0);
-    const currency = isAmende ? (selectedFine?.currency || 'CDF') : isVignette ? (vehicule?.devise_vignette || 'USD') : 'USD';
+    const amountToPay = isAmende ? (selectedFine?.montant || 0) : isVignette ? (vehicule?.montant_vignette || 0) : (vehicule?.montant_assurance || 0);
+    const currencyToUse = isAmende ? (selectedFine?.devise || 'CDF') : isVignette ? (vehicule?.devise_vignette || 'USD') : 'USD';
     const title = isAmende ? 'Amende' : isVignette ? 'Vignette' : 'Assurance';
 
     return (
       <div className="flex flex-col h-full bg-[#f8fbff] animate-in slide-in-from-right duration-300">
         <div className="bg-[#e9b11e] pt-12 pb-6 px-6 md:px-12 lg:px-24 shrink-0">
            <div className="flex items-center gap-4">
-              <button onClick={() => setShowPaymentFlow(false)} className="bg-white/30 p-2 rounded-full hover:bg-white/50 transition">
+              <button 
+                onClick={() => {
+                  setShowPaymentFlow(false);
+                  if (activeSection === 'AMENDE') setActiveSection(null);
+                }} 
+                className="bg-white/30 p-2 rounded-full hover:bg-white/50 transition"
+              >
                  <ChevronLeft className="w-6 h-6 text-black" />
               </button>
               <h1 className="text-xl font-black text-black tracking-tight flex-1 truncate">Paiement {title}</h1>
@@ -121,14 +127,18 @@ export default function StatutFiscal() {
                       <AlertTriangle className="w-8 h-8" />
                     </div>
                     <div>
-                      <h3 className="font-black text-[#1e3b6a] text-lg">{selectedFine.fine_types?.nature}</h3>
+                      <h3 className="font-black text-[#1e3b6a] text-lg">{selectedFine.nature_infraction}</h3>
                       <span className="text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full">Amende #{selectedFine.id.slice(0,8).toUpperCase()}</span>
                     </div>
                   </div>
                   <div className="border-t border-dashed border-gray-200 my-2"></div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">Montant à régler</span>
-                    <span className="text-2xl font-black text-red-600">{selectedFine.amount} {selectedFine.currency}</span>
+                    <span className="text-2xl font-black text-red-600">{selectedFine.montant} {selectedFine.devise}</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-50">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Délai Légal</span>
+                    <span className="text-sm font-black text-[#1e3b6a]">{selectedFine.delai_paiement} JOURS</span>
                   </div>
                 </>
               ) : (
@@ -145,7 +155,7 @@ export default function StatutFiscal() {
                   <div className="border-t border-dashed border-gray-200 my-2"></div>
                   <div className="flex justify-between items-center">
                      <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">Montant à régler</span>
-                     <span className="text-2xl font-black text-red-600">{amount} {currency}</span>
+                     <span className="text-2xl font-black text-red-600">{amountToPay} {currencyToUse}</span>
                   </div>
                 </>
               )}
@@ -324,8 +334,8 @@ export default function StatutFiscal() {
   }
 
   const renderAmendesTab = () => {
-    const pendingFines = fines.filter(f => f.status === 'impayé');
-    const historianFines = fines.filter(f => f.status === 'payé');
+    const pendingFines = fines.filter(f => f.statut === 'INPAYEE');
+    const historianFines = fines.filter(f => f.statut === 'PAYEE');
 
     const FineCard = ({ fine, idx }: { fine: any, idx: number }) => (
       <button 
@@ -334,18 +344,18 @@ export default function StatutFiscal() {
         className="w-full bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center gap-4 mb-4 hover:shadow-md transition-all text-left animate-in fade-in slide-in-from-bottom-4 duration-500"
         style={{ animationDelay: `${idx * 100}ms` }}
       >
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${fine.status === 'payé' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-          {fine.status === 'payé' ? <CheckCircle2 className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${fine.statut === 'PAYEE' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+          {fine.statut === 'PAYEE' ? <CheckCircle2 className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
         </div>
         <div className="flex-1">
           <div className="flex justify-between items-start">
-            <h4 className="font-black text-[#1e3b6a] text-sm truncate">{fine.fine_types?.nature}</h4>
-            <span className="font-black text-[#1e3b6a] text-sm">{fine.amount} {fine.currency}</span>
+            <h4 className="font-black text-[#1e3b6a] text-sm truncate">{fine.nature_infraction}</h4>
+            <span className="font-black text-[#1e3b6a] text-sm">{fine.montant} {fine.devise}</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] font-bold text-gray-400">{new Date(fine.created_at).toLocaleDateString()}</span>
+            <span className="text-[10px] font-bold text-gray-400">{new Date(fine.date_emission).toLocaleDateString()}</span>
             <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-            <span className="text-[10px] font-bold text-gray-400 capitalize">{fine.status}</span>
+            <span className="text-[10px] font-bold text-gray-400 capitalize">{fine.statut?.toLowerCase()}</span>
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-gray-300" />
@@ -400,14 +410,14 @@ export default function StatutFiscal() {
           <div className="w-12 h-1.5 bg-gray-100 rounded-full mx-auto mb-8"></div>
           
           <div className="flex items-center gap-4 mb-6">
-            <div className={`w-16 h-16 rounded-3xl flex items-center justify-center shrink-0 ${selectedFine.status === 'payé' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+            <div className={`w-16 h-16 rounded-3xl flex items-center justify-center shrink-0 ${selectedFine.statut === 'PAYEE' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
               <AlertTriangle className="w-8 h-8" />
             </div>
             <div>
-               <h2 className="text-xl font-black text-[#1e3b6a] leading-tight">{selectedFine.fine_types?.nature}</h2>
+               <h2 className="text-xl font-black text-[#1e3b6a] leading-tight">{selectedFine.nature_infraction}</h2>
                <div className="flex items-center gap-2 mt-1">
-                 <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${selectedFine.status === 'payé' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                    {selectedFine.status}
+                 <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${selectedFine.statut === 'PAYEE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                    {selectedFine.statut}
                  </span>
                  <span className="text-[10px] font-bold text-gray-400">Réf: {selectedFine.id.slice(0,8).toUpperCase()}</span>
                </div>
@@ -419,11 +429,15 @@ export default function StatutFiscal() {
             <div className="grid grid-cols-2 gap-4">
                <div className="bg-gray-50 p-4 rounded-2xl">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Montant</span>
-                  <span className="font-black text-[#1e3b6a]">{selectedFine.amount} {selectedFine.currency}</span>
+                  <span className="font-black text-[#1e3b6a]">{selectedFine.montant} {selectedFine.devise}</span>
                </div>
                <div className="bg-gray-50 p-4 rounded-2xl">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Délai de paiement</span>
+                  <span className="font-black text-rose-600">{selectedFine.delai_paiement} JOURS</span>
+               </div>
+               <div className="bg-gray-50 p-4 rounded-2xl col-span-2">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Date émission</span>
-                  <span className="font-black text-[#1e3b6a]">{new Date(selectedFine.created_at).toLocaleDateString()}</span>
+                  <span className="font-black text-[#1e3b6a]">{new Date(selectedFine.date_emission).toLocaleDateString()}</span>
                </div>
             </div>
 
@@ -473,7 +487,7 @@ export default function StatutFiscal() {
             </div>
 
             {/* Action Button */}
-            {selectedFine.status === 'impayé' ? (
+            {selectedFine.statut === 'INPAYEE' ? (
               <button 
                 onClick={() => selectFineForPayment(selectedFine)}
                 className="w-full bg-[#e9b11e] text-black font-black text-sm uppercase tracking-widest py-5 rounded-[1.5rem] shadow-xl shadow-yellow-500/20 active:scale-95 transition-all mt-4"
@@ -604,7 +618,7 @@ export default function StatutFiscal() {
               onClick={() => { setActiveTab('AMENDES'); setActiveSection(null); }}
               className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all relative z-10 ${activeTab === 'AMENDES' ? 'text-[#1e3b6a]' : 'text-white/60 hover:text-white'}`}
             >
-               Amendes ({fines.filter(f => f.status === 'impayé').length})
+               Amendes ({fines.filter(f => f.statut === 'INPAYEE').length})
             </button>
 
             {/* Tab gliding background */}
