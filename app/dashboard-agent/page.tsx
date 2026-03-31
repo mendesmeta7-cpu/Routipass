@@ -43,6 +43,13 @@ export default function DashboardAgent() {
 
   const handleScanSuccess = async (decodedId: string) => {
     setIsScannerOpen(false);
+
+    // Si l'ID est au nouveau format (conducteur_vehicule), on redirige vers la vue détaillée
+    if (decodedId.includes('_')) {
+      router.push(`/scan/${decodedId}`);
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await agentService.verifyDriver(decodedId);

@@ -110,7 +110,7 @@ export default function ScanVerificationPage() {
                </span>
             </div>
             <button 
-               onClick={() => alert("Le module Profil complet sera bientôt disponible.")}
+               onClick={() => router.push(`/conducteur-public/${driver.driver_id}`)}
                className="p-3 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition"
             >
                <ChevronRight className="w-5 h-5" />
@@ -161,6 +161,14 @@ export default function ScanVerificationPage() {
                className="w-full mt-6 bg-[#1e3b6a] text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#152a4f] shadow-lg transition-transform hover:-translate-y-1"
             >
                <FileText className="w-5 h-5" /> Vérifier Carte Rose
+            </button>
+
+            {/* SUBMIT FINE BUTTON */}
+            <button 
+               onClick={() => router.push(`/dashboard-agent/amende?driver_id=${driver.id}&vehicule_id=${vehicule.id}`)}
+               className="w-full mt-4 bg-rose-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-rose-700 shadow-lg shadow-rose-200 transition-transform hover:-translate-y-1"
+            >
+               <ShieldAlert className="w-5 h-5" /> Soumettre une amende
             </button>
          </div>
       </div>

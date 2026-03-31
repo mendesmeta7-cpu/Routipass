@@ -16,6 +16,7 @@ export interface Conducteur {
   driver_id: string;
   numero_permis: string;
   email?: string;
+  telephone?: string;
   code_pin?: string;
   ville: string;
   commune: string;

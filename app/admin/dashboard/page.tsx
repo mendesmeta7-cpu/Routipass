@@ -119,12 +119,17 @@ export default function AdminDashboard() {
         {/* KPIs Centralisés */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { label: 'Conducteurs', val: stats.conducteurs, icon: Users, color: 'indigo', bg: 'bg-indigo-50', text: 'text-indigo-600' },
-            { label: 'Véhicules', val: stats.vehicules, icon: Car, color: 'blue', bg: 'bg-blue-50', text: 'text-blue-600' },
-            { label: 'Agents PNC', val: stats.agents, icon: ShieldCheck, color: 'amber', bg: 'bg-amber-50', text: 'text-amber-600' },
-            { label: 'Amendes', val: stats.amendes, icon: FileText, color: 'rose', bg: 'bg-rose-50', text: 'text-rose-600' },
+            { label: 'Conducteurs', val: stats.conducteurs, icon: Users, color: 'indigo', bg: 'bg-indigo-50', text: 'text-indigo-600', link: '#' },
+            { label: 'Véhicules', val: stats.vehicules, icon: Car, color: 'blue', bg: 'bg-blue-50', text: 'text-blue-600', link: '#' },
+            { label: 'Agents PNC', val: stats.agents, icon: ShieldCheck, color: 'amber', bg: 'bg-amber-50', text: 'text-amber-600', link: '#' },
+            { label: 'Amendes', val: stats.amendes, icon: FileText, color: 'rose', bg: 'bg-rose-50', text: 'text-rose-600', link: '/admin/dashboard/amendes' },
           ].map((kpi, i) => (
-            <div key={i} className="glass-card rounded-[2.5rem] p-8 border-white/80 hover:scale-[1.02] transition-all animate-fade-in group" style={{ animationDelay: `${i * 100}ms` }}>
+            <div 
+              key={i} 
+              onClick={() => kpi.link !== '#' && router.push(kpi.link)}
+              className={`glass-card rounded-[2.5rem] p-8 border-white/80 hover:scale-[1.02] transition-all animate-fade-in group ${kpi.link !== '#' ? 'cursor-pointer' : ''}`} 
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className={`w-12 h-12 ${kpi.bg} ${kpi.text} rounded-2xl flex items-center justify-center shadow-sm group-hover:rotate-6 transition-transform`}>
                   <kpi.icon className="w-6 h-6" />
@@ -148,11 +153,12 @@ export default function AdminDashboard() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
                 { label: 'Nouveau Permis', sub: 'Enregistrement ID', icon: UserPlus, click: () => setIsPermitModalOpen(true), color: 'bg-indigo-600' },
                 { label: 'Unité Véhicule', sub: 'Certification Technique', icon: Car, click: () => setIsVehicleModalOpen(true), color: 'bg-blue-600' },
                 { label: 'Enrôler Agent', sub: 'Accès Terrain', icon: ShieldCheck, click: () => setIsAgentModalOpen(true), color: 'bg-amber-500' },
+                { label: 'Types d\'Infraction', sub: 'Paramètres Sanctions', icon: FileText, click: () => router.push('/admin/dashboard/types-infractions'), color: 'bg-rose-600' },
               ].map((action, i) => (
                 <div 
                   key={i}
@@ -162,8 +168,8 @@ export default function AdminDashboard() {
                   <div className={`w-14 h-14 ${action.color} text-white rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-blue-900/10 group-hover:scale-110 transition-all`}>
                     <action.icon className="w-6 h-6" />
                   </div>
-                  <span className="text-sm font-black text-slate-900 uppercase tracking-wider">{action.label}</span>
-                  <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{action.sub}</span>
+                  <span className="text-[11px] font-black text-slate-900 uppercase tracking-wider">{action.label}</span>
+                  <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{action.sub}</span>
                 </div>
               ))}
             </div>

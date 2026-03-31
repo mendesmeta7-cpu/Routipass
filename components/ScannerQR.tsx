@@ -30,26 +30,19 @@ export function ScannerQR({ onScanSuccess, onClose }: ScannerQRProps) {
           },
           (decodedText) => {
             if (active) {
-              // On success, we play a small sound if possible, stop scanning, and report back
-              try {
-                const audio = new Audio('/success-scan.mp3');
-                audio.play().catch(() => {});
-              } catch (e) {}
-
-              // Prevent multiple calls
               active = false;
               onScanSuccess(decodedText);
             }
           },
-          (errorMessage) => {
-            // Ignore scan failures as it happens every frame no QR is found
-          }
+          () => {}
         );
 
-        setHasPermission(true);
+        if (active) setHasPermission(true);
       } catch (err: any) {
-        console.error("Camera error:", err);
-        setErrorText("Impossible d'accéder à la caméra. Vérifiez les permissions.");
+        if (active) {
+          console.error("Camera error:", err);
+          setErrorText("Impossible d'accéder à la caméra.");
+        }
       }
     };
 
@@ -57,11 +50,20 @@ export function ScannerQR({ onScanSuccess, onClose }: ScannerQRProps) {
 
     return () => {
       active = false;
-      if (scannerRef.current) {
-        if (scannerRef.current.isScanning) {
-          scannerRef.current.stop().catch(() => {});
-        }
-        scannerRef.current.clear();
+      const scanner = scannerRef.current;
+      if (scanner) {
+        // We use a small timeout to ensure the scanner instance is truly ready to be stopped
+        // This avoids the 'Cannot clear while scan is ongoing' error from html5-qrcode
+        setTimeout(async () => {
+          try {
+            if (scanner.isScanning) {
+              await scanner.stop();
+            }
+            scanner.clear();
+          } catch (e) {
+            // Silently ignore if cleanup fails on unmount
+          }
+        }, 300);
       }
     };
   }, [onScanSuccess]);

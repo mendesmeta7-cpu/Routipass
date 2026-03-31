@@ -36,6 +36,10 @@ export default function DashboardConducteur() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [errorLink, setErrorLink] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [updatingContact, setUpdatingContact] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("");
 
   const [hasAlerts, setHasAlerts] = useState(false);
   const [alertsArray, setAlertsArray] = useState<string[]>([]);
@@ -104,6 +108,31 @@ export default function DashboardConducteur() {
 
     loadData();
   }, [router]);
+
+  const openContactModal = () => {
+    setNewEmail(conducteur?.email || "");
+    setNewPhone(conducteur?.telephone || "");
+    setShowContactModal(true);
+  };
+
+  const handleUpdateContact = async () => {
+    if (!conducteur) return;
+    setUpdatingContact(true);
+    try {
+      await conducteurService.updateProfile(conducteur.id, { 
+        email: newEmail, 
+        telephone: newPhone 
+      });
+      setConducteur({ ...conducteur, email: newEmail, telephone: newPhone });
+      setShowContactModal(false);
+      setToastMessage("Contacts mis à jour !");
+      setShowToast(true);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setUpdatingContact(false);
+    }
+  };
 
   const evaluateAccountHealth = (amendesList: Amende[], vehiculesList: VehiculeWithPhotos[]) => {
     const unpaidAmendes = amendesList.filter(a => a.statut !== 'PAYEE');
@@ -291,7 +320,10 @@ export default function DashboardConducteur() {
               >
                 <ScanLine className="w-5 h-5 text-black" />
               </button>
-              <button className="bg-white px-6 py-2 rounded-2xl shadow-sm hover:bg-gray-50 font-black text-xs tracking-widest uppercase text-black transition-all">
+              <button 
+                onClick={openContactModal}
+                className="bg-white px-6 py-2 rounded-2xl shadow-sm hover:bg-gray-50 font-black text-xs tracking-widest uppercase text-black transition-all"
+              >
                 Contact
               </button>
             </div>
@@ -539,10 +571,56 @@ export default function DashboardConducteur() {
       />
 
       <SuccessToast
-        message="Véhicule lié avec succès à votre profil !"
+        message="Opération réussie !"
         isVisible={showToast}
         onClose={() => setShowToast(false)}
       />
+
+      {/* Contact Update Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in" onClick={() => setShowContactModal(false)}>
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-8 flex flex-col items-center relative overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 text-blue-600">
+               <Phone className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-[#1e3b6a] text-center tracking-tight mb-2">Mes Coordonnées</h3>
+            <p className="text-sm text-center text-gray-500 mb-8 font-medium">Mettez à jour vos informations de contact pour être joignable par les agents.</p>
+
+            <div className="w-full flex flex-col gap-4">
+               <div className="space-y-1">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Adresse Email</span>
+                  <Input 
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="votre@email.com"
+                    className="h-14 bg-gray-50 border-gray-100 rounded-2xl font-bold text-[#1e3b6a]"
+                  />
+               </div>
+               <div className="space-y-1">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Numéro de téléphone</span>
+                  <Input 
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                    placeholder="+243 000 000 000"
+                    className="h-14 bg-gray-50 border-gray-100 rounded-2xl font-bold text-[#1e3b6a]"
+                  />
+               </div>
+
+               <Button 
+                 onClick={handleUpdateContact}
+                 disabled={updatingContact}
+                 className="h-14 bg-[#1e3b6a] text-white rounded-2xl font-bold shadow-lg mt-2"
+               >
+                 {updatingContact ? <Loader2 className="w-5 h-5 animate-spin" /> : "ENREGISTRER LES MODIFICATIONS"}
+               </Button>
+            </div>
+
+            <button onClick={() => setShowContactModal(false)} className="mt-6 text-xs font-bold text-gray-400 uppercase">
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -75,7 +75,7 @@ export const conducteurService = {
   async getProfileByDriverId(driverId: string): Promise<Conducteur | null> {
     const { data, error } = await supabase
       .from('conducteurs')
-      .select('*')
+      .select('*, permis(*)')
       .eq('driver_id', driverId)
       .single();
 
@@ -105,6 +105,15 @@ export const conducteurService = {
     return data;
   },
 
+  async updateProfile(id: string, updates: { email?: string; telephone?: string }): Promise<void> {
+    const { error } = await supabase
+      .from('conducteurs')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
   async getVehicules(conducteurId: string): Promise<Vehicule[]> {
     const { data, error } = await supabase
       .from('conducteur_vehicule')
@@ -124,6 +133,17 @@ export const conducteurService = {
       .select('*')
       .eq('conducteur_id', conducteurId)
       .order('date_creation', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getFinesIssued(conducteurId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('fines_issued')
+      .select('*, fine_types(*), vehicules(*)')
+      .eq('conducteur_id', conducteurId)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data;
