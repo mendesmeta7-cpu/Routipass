@@ -5,13 +5,15 @@ import { ChevronLeft, FileText, AlertCircle, ShieldCheck, CreditCard, ChevronRig
 import { conducteurService } from '@/services/conducteurs';
 import { authService } from '@/services/auth';
 import type { Conducteur, Vehicule } from '@/types';
-import { getUsageIllustration, getValidityStatus, getCountdownStatus } from '@/utils/vehicleUtils';
+import { getUsageIllustration, getValidityStatus, getCountdownStatus, calculateDaysRemaining } from '@/utils/vehicleUtils';
+import { useSearchParams } from 'next/navigation';
 
 type TabType = 'OBLIGATIONS' | 'AMENDES';
 type SubSectionType = 'VIGNETTE' | 'ASSURANCE' | 'CONTROLE_TECHNIQUE' | 'AMENDE' | null;
 
 export default function StatutFiscal() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>('OBLIGATIONS');
   const [activeSection, setActiveSection] = useState<SubSectionType>(null);
   const [selectedVehiculeId, setSelectedVehiculeId] = useState<string | null>(null);
@@ -53,6 +55,28 @@ export default function StatutFiscal() {
     fetchData();
   }, [router]);
 
+  // Handle Query Params for Fast Path (Notifications)
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const fineId = searchParams.get('fineId');
+    const paymentFlowParam = searchParams.get('paymentFlow');
+
+    if (tab === 'AMENDES') {
+      setActiveTab('AMENDES');
+    }
+
+    if (fineId && fines.length > 0) {
+      const fine = fines.find(f => f.id === fineId);
+      if (fine) {
+        setSelectedFine(fine);
+        if (paymentFlowParam === 'true') {
+          setActiveSection('AMENDE');
+          setShowPaymentFlow(true);
+        }
+      }
+    }
+  }, [searchParams, fines]);
+
   const selectVehicleForPayment = (vId: string, section: SubSectionType) => {
     const vehicule = vehicules.find(v => v.id === vId);
     if (!vehicule) return;
@@ -77,13 +101,6 @@ export default function StatutFiscal() {
     setShowPaymentFlow(true);
   };
 
-  const calculateDaysRemaining = (expDateStr: string) => {
-    if (!expDateStr) return 0;
-    const exp = new Date(expDateStr);
-    const now = new Date();
-    const diffTime = exp.getTime() - now.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
 
   const getSelectedVehicule = () => vehicules.find(v => v.id === selectedVehiculeId);
 

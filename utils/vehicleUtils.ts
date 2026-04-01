@@ -103,6 +103,19 @@ export function getValidityStatus(expiryDate: string | null): {
 }
 
 /**
+ * Helper to calculate days remaining from an ISO date string.
+ */
+export function calculateDaysRemaining(dateStr: string | null): number {
+  if (!dateStr) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const exp = new Date(dateStr);
+  exp.setHours(0, 0, 0, 0);
+  const diffTime = exp.getTime() - today.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+/**
  * Calculates a detailed countdown status for a document.
  * @param expiryDate ISO date string
  * @returns Object with days remaining and visual styling info.

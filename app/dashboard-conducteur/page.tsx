@@ -13,6 +13,7 @@ import { Conducteur, Vehicule, Amende } from "@/types";
 import { VehiclePreviewModal } from "@/components/VehiclePreviewModal";
 import { SuccessToast } from "@/components/ui/toast";
 import { getUsageIllustration, getValidityStatus } from "@/utils/vehicleUtils";
+import { supabase } from "@/lib/supabaseClient"; // For real-time
 
 // Interface for a vehicle combined with its associated drivers' photos
 interface VehiculeWithPhotos extends Vehicule {
@@ -45,6 +46,13 @@ export default function DashboardConducteur() {
   const [hasAlerts, setHasAlerts] = useState(false);
   const [alertsArray, setAlertsArray] = useState<string[]>([]);
   const [currentAlertIndex, setCurrentAlertIndex] = useState(0);
+
+  // Notifications State
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isBellWiggling, setIsBellWiggling] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [recentUnpaidFines, setRecentUnpaidFines] = useState<Amende[]>([]);
+  const [showNewFineToast, setShowNewFineToast] = useState(false);
 
   useEffect(() => {
     if (alertsArray.length > 1) {
@@ -83,7 +91,7 @@ export default function DashboardConducteur() {
 
         const [userVehicules, userAmendes] = await Promise.all([
           conducteurService.getVehicules(profile.id),
-          conducteurService.getAmendes(profile.id)
+          conducteurService.getFinesIssued(profile.id)
         ]);
 
         // Load associated photos for each vehicle
@@ -97,6 +105,11 @@ export default function DashboardConducteur() {
         setVehicules(vehiclesWithPhotos);
         setAmendes(userAmendes);
 
+        // Notifications initialization
+        const unpaid = userAmendes.filter(a => a.statut !== 'PAYEE');
+        setUnreadCount(unpaid.length);
+        setRecentUnpaidFines(unpaid.slice(0, 5));
+
         // Evaluate simple business rules for Account Status
         evaluateAccountHealth(userAmendes, vehiclesWithPhotos);
 
@@ -108,7 +121,64 @@ export default function DashboardConducteur() {
     };
 
     loadData();
+
+    // Listen for real-time fines
+    const setupRealtime = async () => {
+      const user = await authService.getCurrentUser();
+      if (!user) return;
+
+      const profile = await conducteurService.getProfileById(user.id);
+      if (!profile) return;
+
+      const channel = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'fines_issued',
+            filter: `conducteur_id=eq.${profile.id}`
+          },
+          (payload) => {
+            console.log('New fine detected!', payload);
+            handleNewFine(payload.new as Amende);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+
+    const cleanup = setupRealtime();
+    return () => {
+      cleanup.then(fn => fn && fn());
+    };
   }, [router]);
+
+  const handleNewFine = (fine: Amende) => {
+    setUnreadCount(prev => prev + 1);
+    setRecentUnpaidFines(prev => [fine, ...prev].slice(0, 5));
+    setIsBellWiggling(true);
+    setShowNewFineToast(true);
+    playBip();
+
+    // Reset wiggle after animation completes
+    setTimeout(() => setIsBellWiggling(false), 800);
+    // Hide toast after 5 seconds
+    setTimeout(() => setShowNewFineToast(false), 5000);
+  };
+
+  const playBip = () => {
+    try {
+      const audio = new Audio('/sounds/notification.m4a');
+      audio.play().catch(e => console.warn("Audio play failed - user interaction might be required", e));
+    } catch (err) {
+      console.warn("Could not play notification sound", err);
+    }
+  };
 
   const openContactModal = () => {
     setNewEmail(conducteur?.email || "");
@@ -255,6 +325,31 @@ export default function DashboardConducteur() {
         .anim-moto {
           animation: alternateSilhouetteReverse 6s infinite ease-in-out;
         }
+
+        /* Notifications & Wiggle */
+        @keyframes bellWiggle {
+          0% { transform: rotate(0); }
+          10% { transform: rotate(15deg); }
+          20% { transform: rotate(-15deg); }
+          30% { transform: rotate(10deg); }
+          40% { transform: rotate(-10deg); }
+          50% { transform: rotate(5deg); }
+          60% { transform: rotate(-5deg); }
+          70% { transform: rotate(2deg); }
+          80% { transform: rotate(-2deg); }
+          100% { transform: rotate(0); }
+        }
+        .bell-wiggle {
+          animation: bellWiggle 0.8s ease-in-out;
+        }
+
+        @keyframes toastIn {
+          0% { opacity: 0; transform: translateX(10px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
+        .toast-entrance {
+          animation: toastIn 0.3s ease-out;
+        }
       `}} />
 
       {/* Main Responsive Frame - Full Width Fill Screen */}
@@ -277,12 +372,83 @@ export default function DashboardConducteur() {
             </button>
 
             {/* Notifications Icon (top right) */}
-            <button className="absolute top-10 right-6 outline-none hover:scale-105 transition-transform">
-               <div className="relative bg-white/20 p-2 rounded-full">
-                 <Bell className="w-5 h-5 text-black" strokeWidth={2} />
-                 {hasAlerts && <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#e9b11e]"></div>}
-               </div>
-            </button>
+            <div className="absolute top-10 right-6 z-40">
+              <button 
+                onClick={() => {
+                  setShowNotifications(!showNotifications);
+                  if (!showNotifications) {
+                    setUnreadCount(0); // Reset count when opening
+                  }
+                }}
+                className={`relative bg-white/20 p-2 rounded-full outline-none transition-all hover:scale-105 active:scale-95 ${isBellWiggling ? 'bell-wiggle' : ''}`}
+              >
+                <Bell className="w-5 h-5 text-black" strokeWidth={2} />
+                
+                {unreadCount > 0 && (
+                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-[#e9b11e] flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-white leading-none">{unreadCount}</span>
+                  </div>
+                )}
+              </button>
+
+              {/* Floating Toast Notification */}
+              {showNewFineToast && recentUnpaidFines.length > 0 && (
+                <div 
+                  onClick={() => router.push(`/statut-fiscal?tab=AMENDES&fineId=${recentUnpaidFines[0].id}&paymentFlow=true`)}
+                  className="absolute top-0 right-12 whitespace-nowrap bg-white shadow-xl border border-gray-100 rounded-xl px-4 py-2 flex items-center gap-2 cursor-pointer toast-entrance hover:bg-gray-50 transition-colors z-50"
+                >
+                  <span className="text-sm font-black text-[#1e3b6a]">🚨 Nouvelle amende !</span>
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+              )}
+
+              {/* Notifications Popover */}
+              {showNotifications && (
+                <div className="absolute top-12 right-0 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-black text-[#1e3b6a] uppercase tracking-wider">Notifications</h4>
+                    <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600">
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {recentUnpaidFines.length > 0 ? (
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-bold text-red-500 leading-tight">
+                        Vous avez des amendes impayées. Veuillez régulariser votre situation.
+                      </p>
+                      <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                        {recentUnpaidFines.map((fine) => (
+                          <div key={fine.id} className="p-2 bg-gray-50 rounded-xl border border-gray-100 flex flex-col gap-1">
+                            <div className="flex justify-between items-start">
+                              <span className="text-[10px] font-black text-gray-900 truncate pr-2">{fine.nature_infraction || fine.motif}</span>
+                              <span className="text-[10px] font-bold text-[#1e3b6a]">{fine.montant.toLocaleString()} {fine.devise}</span>
+                            </div>
+                            <button 
+                              onClick={() => router.push(`/statut-fiscal?tab=AMENDES&fineId=${fine.id}&paymentFlow=true`)}
+                              className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:underline text-left mt-1"
+                            >
+                              Payer maintenant →
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <Link 
+                        href="/statut-fiscal?tab=AMENDES" 
+                        className="block w-full py-2 bg-[#1e3b6a] text-white text-center rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-[#152e6f] transition-colors mt-2"
+                      >
+                        Voir tout le statut fiscal
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2 opacity-20" />
+                      <p className="text-xs font-bold text-gray-400">Aucune nouvelle notification</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="flex gap-4 items-start pr-8">
               {/* Photo Cadre */}
