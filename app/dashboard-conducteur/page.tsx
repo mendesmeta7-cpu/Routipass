@@ -12,7 +12,7 @@ import { conducteurService } from "@/services/conducteurs";
 import { Conducteur, Vehicule, Amende } from "@/types";
 import { VehiclePreviewModal } from "@/components/VehiclePreviewModal";
 import { SuccessToast } from "@/components/ui/toast";
-import { getUsageIllustration } from "@/utils/vehicleUtils";
+import { getUsageIllustration, getValidityStatus } from "@/utils/vehicleUtils";
 
 // Interface for a vehicle combined with its associated drivers' photos
 interface VehiculeWithPhotos extends Vehicule {
@@ -420,10 +420,9 @@ export default function DashboardConducteur() {
 
            {/* Vehicles Stacked List */}
            {vehicules.length > 0 && vehicules.map((v, idx) => {
-             const today = new Date();
-             const vignetteOk = v.date_expiration_vignette ? new Date(v.date_expiration_vignette) >= today : false;
-             const assOk = v.date_expiration_assurance ? new Date(v.date_expiration_assurance) >= today : false;
-             const ctOk = v.date_prochain_controle ? new Date(v.date_prochain_controle) >= today : false;
+             const assStatus = getValidityStatus(v.date_expiration_assurance);
+             const ctStatus = getValidityStatus(v.date_prochain_controle);
+             const vigStatus = getValidityStatus(v.date_expiration_vignette);
 
              return (
               <div key={v.id} className="w-full bg-white rounded-3xl p-3 sm:p-5 shadow-sm border border-gray-100 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-5 relative transition-all hover:shadow-md animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both" style={{ animationDelay: `${idx * 100}ms` }}>
@@ -445,15 +444,15 @@ export default function DashboardConducteur() {
                    {/* Fiscal Indicators */}
                    <div className="flex items-center flex-wrap gap-x-2 sm:gap-x-3 gap-y-1 mt-2 sm:mt-4">
                       <div className="flex items-center gap-1 sm:gap-1.5">
-                         <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${assOk ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: assStatus.color }}></div>
                          <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">ASSURANCE</span>
                       </div>
                       <div className="flex items-center gap-1 sm:gap-1.5">
-                         <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${ctOk ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: ctStatus.color }}></div>
                          <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">INSP. TECH</span>
                       </div>
                       <div className="flex items-center gap-1 sm:gap-1.5">
-                         <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${vignetteOk ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: vigStatus.color }}></div>
                          <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">VIGNETTE</span>
                       </div>
                    </div>

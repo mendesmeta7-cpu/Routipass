@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { conducteurService } from '@/services/conducteurs';
 import { Vehicule, Conducteur } from '@/types';
-import { getUsageIllustration } from '@/utils/vehicleUtils';
+import { getUsageIllustration, getValidityStatus, getCountdownStatus } from '@/utils/vehicleUtils';
 import { ChevronLeft, ChevronRight, QrCode, Download, Trash2, Users, FileText, Settings, ShieldCheck, AlertTriangle } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { authService } from '@/services/auth';
@@ -117,10 +117,10 @@ export default function FicheVehiculePage() {
 
   const qrValue = `${currentUser.user_metadata?.driver_id || currentUser.driver_id}_${vehicule.id}`;
 
-  const today = new Date();
-  const vignetteOk = vehicule.date_expiration_vignette ? new Date(vehicule.date_expiration_vignette) >= today : false;
-  const assOk = vehicule.date_expiration_assurance ? new Date(vehicule.date_expiration_assurance) >= today : false;
-  const ctOk = vehicule.date_prochain_controle ? new Date(vehicule.date_prochain_controle) >= today : false;
+  const assStatus = getValidityStatus(vehicule.date_expiration_assurance);
+  const ctStatus = getValidityStatus(vehicule.date_prochain_controle);
+  const ctCountdown = getCountdownStatus(vehicule.date_prochain_controle);
+  const vigStatus = getValidityStatus(vehicule.date_expiration_vignette);
 
   return (
     <main className="w-full min-h-screen bg-[#f8fbff] flex flex-col relative overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
@@ -205,22 +205,33 @@ export default function FicheVehiculePage() {
                <ShieldCheck className="w-4 h-4 text-gray-500" /> Statut Fiscal
             </h3>
             <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
-               <div className={`p-3.5 rounded-2xl flex items-center justify-between border ${assOk ? 'bg-green-50/50 border-green-100' : 'bg-red-50/50 border-red-100'}`}>
-                  <span className={`font-black text-sm uppercase tracking-widest ${assOk ? 'text-green-700' : 'text-red-700'}`}>Assurance</span>
-                  <div className={`text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm ${assOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                     {assOk ? 'VALIDE' : 'EXPIRÉ'}
+               <div className="p-3.5 rounded-2xl flex items-center justify-between border transition-all duration-300" style={{ backgroundColor: assStatus.bg, borderColor: assStatus.border }}>
+                  <span className="font-black text-sm uppercase tracking-widest" style={{ color: assStatus.text }}>Assurance</span>
+                  <div className="text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" style={{ backgroundColor: assStatus.badge, color: assStatus.text }}>
+                     {assStatus.label}
                   </div>
                </div>
-               <div className={`p-3.5 rounded-2xl flex items-center justify-between border ${ctOk ? 'bg-green-50/50 border-green-100' : 'bg-red-50/50 border-red-100'}`}>
-                  <span className={`font-black text-sm uppercase tracking-widest ${ctOk ? 'text-green-700' : 'text-red-700'}`}>Contrôle Tech.</span>
-                  <div className={`text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm ${ctOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                     {ctOk ? 'VALIDE' : 'EXPIRÉ'}
+               <div className="p-3.5 rounded-2xl flex flex-col gap-2 border transition-all duration-300 shadow-sm" style={{ backgroundColor: ctCountdown.bg, borderColor: ctCountdown.border }}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-sm uppercase tracking-widest" style={{ color: ctCountdown.text }}>Contrôle Tech.</span>
+                    <div className="text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" style={{ backgroundColor: ctCountdown.color, color: 'white' }}>
+                      {ctCountdown.label}
+                    </div>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/50 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full transition-all duration-1000 ease-out"
+                      style={{ 
+                        width: ctCountdown.status === 'expired' ? '100%' : `${Math.min(100, Math.max(5, (ctCountdown.days / 365) * 100))}%`,
+                        backgroundColor: ctCountdown.color 
+                      }}
+                    ></div>
                   </div>
                </div>
-               <div className={`p-3.5 rounded-2xl flex items-center justify-between border ${vignetteOk ? 'bg-green-50/50 border-green-100' : 'bg-red-50/50 border-red-100'}`}>
-                  <span className={`font-black text-sm uppercase tracking-widest ${vignetteOk ? 'text-green-700' : 'text-red-700'}`}>Vignette</span>
-                  <div className={`text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm ${vignetteOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                     {vignetteOk ? 'VALIDE' : 'EXPIRÉ'}
+               <div className="p-3.5 rounded-2xl flex items-center justify-between border transition-all duration-300" style={{ backgroundColor: vigStatus.bg, borderColor: vigStatus.border }}>
+                  <span className="font-black text-sm uppercase tracking-widest" style={{ color: vigStatus.text }}>Vignette</span>
+                  <div className="text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" style={{ backgroundColor: vigStatus.badge, color: vigStatus.text }}>
+                     {vigStatus.label}
                   </div>
                </div>
             </div>
