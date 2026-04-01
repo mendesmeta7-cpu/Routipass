@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, FileText, AlertCircle, ShieldCheck, CreditCard, ChevronRight, CheckCircle2, History, MapPin, Camera, AlertTriangle, Eye } from 'lucide-react';
 import { conducteurService } from '@/services/conducteurs';
@@ -11,7 +11,7 @@ import { useSearchParams } from 'next/navigation';
 type TabType = 'OBLIGATIONS' | 'AMENDES';
 type SubSectionType = 'VIGNETTE' | 'ASSURANCE' | 'CONTROLE_TECHNIQUE' | 'AMENDE' | null;
 
-export default function StatutFiscal() {
+function StatutFiscalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>('OBLIGATIONS');
@@ -684,5 +684,17 @@ export default function StatutFiscal() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function StatutFiscal() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen w-full flex items-center justify-center bg-[#f8fbff]">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <StatutFiscalContent />
+    </Suspense>
   );
 }
