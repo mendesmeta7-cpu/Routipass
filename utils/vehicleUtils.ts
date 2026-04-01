@@ -14,6 +14,30 @@ export function generateVIN(): string {
 }
 
 /**
+ * Generates a random license plate number based on usage.
+ * Moto-taxi: 99 + 4 digits + 2 letters (e.g., 994012AC)
+ * Others: 75 + 4 digits + 2 letters (e.g., 751234XY)
+ */
+export function generatePlate(usage: string): string {
+  const prefix = usage === 'Moto-taxi' ? 'CG099' : 'CG075';
+  const digits = Math.floor(1000 + Math.random() * 9000).toString();
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const letters = chars.charAt(Math.floor(Math.random() * chars.length)) + 
+                 chars.charAt(Math.floor(Math.random() * chars.length));
+  
+  return `${prefix}${digits}${letters}`;
+}
+
+/**
+ * Generates a random driving license number.
+ * Pattern: AA + 7 digits + KN (e.g., AA0009075KN)
+ */
+export function generateLicense(): string {
+  const digits = Math.floor(1000000 + Math.random() * 9000000).toString().padStart(7, '0');
+  return `AA${digits}KN`;
+}
+
+/**
  * Calculates the validity status of a document based on its expiration date.
  * @param expiryDate ISO date string
  * @returns { color: string, label: string, bg: string, text: string, badge: string, status: 'valid' | 'warning' | 'expired' }

@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { adminService } from "@/services/admin";
 import { Loader2, User, Car, Cog, Calendar, RefreshCcw, ShieldCheck, Zap, Info, MapPin, Phone, Hash, Fuel, Gauge, Weight, Activity, CreditCard } from "lucide-react";
-import { generateVIN, getUsageIllustration } from "@/utils/vehicleUtils";
+import { generateVIN, getUsageIllustration, generatePlate } from "@/utils/vehicleUtils";
+import { toast } from "sonner";
+import { Copy, Check } from "lucide-react";
 
 interface AddVehicleModalProps {
   isOpen: boolean;
@@ -17,6 +19,8 @@ interface AddVehicleModalProps {
 export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalProps) {
   const [loading, setLoading] = useState(false);
   const [isManualPuissance, setIsManualPuissance] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   const [formData, setFormData] = useState({
     plaque: "",
@@ -40,6 +44,29 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
     numero_police_assurance: ""
   });
 
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success("Copié dans le presse-papier");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const autoGeneratePlate = async (usage: string) => {
+    setIsGenerating(true);
+    let isUnique = false;
+    let newPlate = "";
+    let attempts = 0;
+
+    while (!isUnique && attempts < 10) {
+      newPlate = generatePlate(usage);
+      isUnique = await adminService.isPlaqueUnique(newPlate);
+      attempts++;
+    }
+
+    setFormData(prev => ({ ...prev, plaque: newPlate }));
+    setIsGenerating(false);
+  };
+
   // Auto-generate VIN on open
   useEffect(() => {
     if (isOpen && !formData.chassis_no) {
@@ -59,6 +86,11 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
       setIsManualPuissance(false);
       setFormData({ ...formData, puissance: val });
     }
+  };
+
+  const handleUsageChange = (val: string) => {
+    setFormData(prev => ({ ...prev, usage_categorie: val }));
+    autoGeneratePlate(val);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,14 +214,26 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Immatriculation (Plaque)</label>
-              <div className="relative">
+              <div className="relative group/field">
                 <Input 
-                  required 
-                  placeholder="0000AB01" 
+                  readOnly
+                  placeholder="AUTO-GÉNÉRÉ" 
                   value={formData.plaque} 
-                  onChange={(e) => setFormData({...formData, plaque: e.target.value.toUpperCase()})} 
-                  className="h-12 bg-white border-slate-100 rounded-xl focus:ring-indigo-500 font-black tracking-[0.2em] text-center"
+                  className="h-12 bg-slate-50 border-slate-100 rounded-xl focus:ring-indigo-500 font-black tracking-[0.2em] text-center cursor-default"
                 />
+                <button 
+                  type="button"
+                  onClick={() => handleCopy(formData.plaque)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 hover:bg-white rounded-lg transition-all text-slate-400 hover:text-indigo-600 border border-transparent hover:border-slate-100"
+                  title="Copier le numéro"
+                >
+                  {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                </button>
+                {isGenerating && (
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                  </div>
+                )}
               </div>
             </div>
             <div className="space-y-2">
@@ -324,7 +368,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
                   required
                   className="w-full h-12 pl-10 pr-4 bg-white border border-slate-100 rounded-xl font-bold text-sm appearance-none focus:ring-2 focus:ring-emerald-500"
                   value={formData.usage_categorie}
-                  onChange={(e) => setFormData({...formData, usage_categorie: e.target.value})}
+                  onChange={(e) => handleUsageChange(e.target.value)}
                 >
                   <option value="Privé">Privé</option>
                   <option value="Public">Public</option>

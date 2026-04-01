@@ -193,6 +193,10 @@ export default function InscriptionPage() {
                       <div className="text-xl font-black text-on-background uppercase tracking-tight">
                         {donneesPermis.nom} {donneesPermis.prenom}
                       </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="material-symbols-outlined !text-xs text-slate-400">location_on</span>
+                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.15em]">Né(e) à {donneesPermis.lieu_naissance}</div>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -268,6 +272,24 @@ export default function InscriptionPage() {
                       onChange={(e) => setFormData({...formData, adresse: e.target.value})} 
                       className="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-12 px-6 text-on-surface font-medium shadow-inner" 
                     />
+                  </div>
+                  <div className="space-y-2 px-1 md:col-span-2">
+                    <label className="text-[11px] font-bold text-on-surface-variant ml-4 uppercase tracking-tighter">École de formation</label>
+                    <div className="relative group">
+                      <select 
+                        required
+                        className="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-12 px-6 text-on-surface font-medium shadow-inner appearance-none transition-all pr-12"
+                        value={formData.ecoleFormation}
+                        onChange={(e) => setFormData({...formData, ecoleFormation: e.target.value})}
+                      >
+                        <option value="" disabled>Sélectionnez votre auto-école</option>
+                        <option value="Auto-école Makumbi">1. Auto-école Makumbi</option>
+                        <option value="CAMS Auto-école">2. CAMS Auto-école</option>
+                        <option value="Auto-école Excellence">3. Auto-école Excellence</option>
+                        <option value="Auto formation">Auto formation</option>
+                      </select>
+                      <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-outline/40">expand_more</span>
+                    </div>
                   </div>
                 </div>
               </div>

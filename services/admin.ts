@@ -1,7 +1,25 @@
 import { supabase } from '@/lib/supabaseClient';
 
 export const adminService = {
-  async createPermis(data: { numero_permis: string, nom: string, prenom: string, categorie_permis: string, date_naissance: string, photo_file?: File }) {
+  async isPermisUnique(numero_permis: string) {
+    const { count, error } = await supabase
+      .from('permis')
+      .select('*', { count: 'exact', head: true })
+      .eq('numero_permis', numero_permis);
+    if (error) throw error;
+    return count === 0;
+  },
+
+  async isPlaqueUnique(plaque: string) {
+    const { count, error } = await supabase
+      .from('vehicules')
+      .select('*', { count: 'exact', head: true })
+      .eq('plaque', plaque);
+    if (error) throw error;
+    return count === 0;
+  },
+
+  async createPermis(data: { numero_permis: string, nom: string, prenom: string, categorie_permis: string, date_naissance: string, lieu_naissance: string, photo_file?: File }) {
     let photoUrl = null;
 
     if (data.photo_file) {
@@ -29,6 +47,7 @@ export const adminService = {
           prenom: data.prenom,
           categorie_permis: data.categorie_permis,
           date_naissance: data.date_naissance,
+          lieu_naissance: data.lieu_naissance,
           photo: photoUrl,
           nationalite: 'Congolaise', // Default for now
         }

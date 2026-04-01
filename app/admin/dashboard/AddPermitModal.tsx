@@ -5,7 +5,10 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { adminService } from "@/services/admin";
-import { Loader2, UserPlus, ShieldCheck, Fingerprint, Calendar, Camera } from "lucide-react";
+import { Loader2, UserPlus, ShieldCheck, Fingerprint, Calendar, Camera, Copy, Check } from "lucide-react";
+import { useEffect } from "react";
+import { generateLicense } from "@/utils/vehicleUtils";
+import { toast } from "sonner";
 
 interface AddPermitModalProps {
   isOpen: boolean;
@@ -15,14 +18,47 @@ interface AddPermitModalProps {
 
 export function AddPermitModal({ isOpen, onClose, onSuccess }: AddPermitModalProps) {
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [formData, setFormData] = useState({
     numero_permis: "",
     nom: "",
     prenom: "",
     categorie_permis: "B",
-    date_naissance: ""
+    date_naissance: "",
+    lieu_naissance: ""
   });
   const [photoFile, setPhotoFile] = useState<File | undefined>(undefined);
+
+  const handleCopy = (text: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success("Numéro de permis copié !");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const autoGenerateLicense = async () => {
+    setIsGenerating(true);
+    let isUnique = false;
+    let newNum = "";
+    let attempts = 0;
+
+    while (!isUnique && attempts < 10) {
+      newNum = generateLicense();
+      isUnique = await adminService.isPermisUnique(newNum);
+      attempts++;
+    }
+
+    setFormData(prev => ({ ...prev, numero_permis: newNum }));
+    setIsGenerating(false);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      autoGenerateLicense();
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,11 +68,11 @@ export function AddPermitModal({ isOpen, onClose, onSuccess }: AddPermitModalPro
       onSuccess();
       onClose();
       setFormData({
-        numero_permis: "",
         nom: "",
         prenom: "",
         categorie_permis: "B",
-        date_naissance: ""
+        date_naissance: "",
+        lieu_naissance: ""
       });
       setPhotoFile(undefined);
     } catch (error: any) {
@@ -62,15 +98,27 @@ export function AddPermitModal({ isOpen, onClose, onSuccess }: AddPermitModalPro
 
         <div className="space-y-2">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Numéro de Permis Unique</label>
-          <div className="relative">
+          <div className="relative group/field">
             <Input 
-              required 
-              placeholder="EX: CD-123456" 
-              className="pl-12 h-14 bg-slate-50 border-slate-100 rounded-2xl focus:ring-indigo-500 font-black text-slate-900 placeholder:font-medium uppercase tracking-wider"
+              readOnly
+              placeholder="GÉNÉRATION EN COURS..." 
+              className="pl-12 pr-12 h-14 bg-indigo-50/30 border-slate-100 rounded-2xl focus:ring-indigo-500 font-black text-slate-900 placeholder:font-medium uppercase tracking-wider cursor-default"
               value={formData.numero_permis} 
-              onChange={(e) => setFormData({...formData, numero_permis: e.target.value.toUpperCase()})} 
             />
-            <Fingerprint className="w-5 h-5 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2" />
+            <Fingerprint className="w-5 h-5 text-indigo-400 absolute left-4 top-1/2 -translate-y-1/2" />
+            <button 
+              type="button"
+              onClick={() => handleCopy(formData.numero_permis)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 hover:bg-white rounded-xl transition-all text-slate-400 hover:text-indigo-600 border border-transparent hover:border-slate-100"
+              title="Copier le numéro"
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+            </button>
+            {isGenerating && (
+              <div className="absolute left-10 top-1/2 -translate-y-1/2">
+                <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+              </div>
+            )}
           </div>
         </div>
 
@@ -125,6 +173,19 @@ export function AddPermitModal({ isOpen, onClose, onSuccess }: AddPermitModalPro
                 onChange={(e) => setFormData({...formData, date_naissance: e.target.value})} 
               />
             </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Lieu de naissance</label>
+          <div className="relative">
+            <Input 
+              required 
+              placeholder="VILLE / COMMUNE" 
+              className="h-14 bg-slate-50 border-slate-100 rounded-2xl focus:ring-indigo-500 font-bold px-5 uppercase"
+              value={formData.lieu_naissance} 
+              onChange={(e) => setFormData({...formData, lieu_naissance: e.target.value.toUpperCase()})} 
+            />
           </div>
         </div>
 
