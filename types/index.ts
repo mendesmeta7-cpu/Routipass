@@ -4,6 +4,7 @@ export interface Permis {
   nom: string;
   prenom: string;
   date_naissance: string;
+  lieu_naissance?: string;
   nationalite: string;
   photo?: string;
   telephone?: string;
@@ -57,10 +58,13 @@ export interface Vehicule {
 export interface Amende {
   id: string;
   motif: string;
+  nature_infraction?: string;
   montant: number;
+  devise?: string;
   statut: 'INPAYEE' | 'PAYEE';
   conducteur_id: string;
   agent_id?: string;
+  date_emission?: string;
   date_creation: string;
 }
 
