@@ -68,6 +68,7 @@ export function AddPermitModal({ isOpen, onClose, onSuccess }: AddPermitModalPro
       onSuccess();
       onClose();
       setFormData({
+        numero_permis: "",
         nom: "",
         prenom: "",
         categorie_permis: "B",
