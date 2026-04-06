@@ -378,7 +378,7 @@ function StatutFiscalContent() {
   }
 
   const renderAmendesTab = () => {
-    const pendingFines = fines.filter(f => f.statut === 'INPAYEE');
+    const pendingFines = fines.filter(f => f.statut === 'IMPAYÉE');
     const historianFines = fines.filter(f => f.statut === 'PAYEE');
 
     const FineCard = ({ fine, idx }: { fine: any, idx: number }) => (
@@ -531,7 +531,7 @@ function StatutFiscalContent() {
             </div>
 
             {/* Action Button */}
-            {selectedFine.statut === 'INPAYEE' ? (
+            {selectedFine.statut === 'IMPAYÉE' ? (
               <button
                 onClick={() => selectFineForPayment(selectedFine)}
                 className="w-full bg-[#e9b11e] text-black font-black text-sm uppercase tracking-widest py-5 rounded-[1.5rem] shadow-xl shadow-yellow-500/20 active:scale-95 transition-all mt-4"
@@ -662,7 +662,7 @@ function StatutFiscalContent() {
             onClick={() => { setActiveTab('AMENDES'); setActiveSection(null); }}
             className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all relative z-10 ${activeTab === 'AMENDES' ? 'text-[#1e3b6a]' : 'text-white/60 hover:text-white'}`}
           >
-            Amendes ({fines.filter(f => f.statut === 'INPAYEE').length})
+            Amendes ({fines.filter(f => f.statut === 'IMPAYÉE').length})
           </button>
 
           {/* Tab gliding background */}

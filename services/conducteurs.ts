@@ -240,10 +240,11 @@ export const conducteurService = {
       .select(`
         conducteurs (
           id,
-          nom,
-          postnom,
-          prenom,
-          photo
+          permis (
+             nom,
+             prenom,
+             photo
+          )
         )
       `)
       .eq('vehicule_id', vehiculeId)
@@ -254,6 +255,18 @@ export const conducteurService = {
       return [];
     }
 
-    return data.map((item: any) => item.conducteurs).filter(Boolean);
+    return data
+      .map((item: any) => {
+         const cond = item.conducteurs;
+         if (!cond || !cond.permis) return null;
+         return {
+            id: cond.id,
+            nom: cond.permis.nom,
+            prenom: cond.permis.prenom,
+            postnom: '', // permis n'a pas de postnom directement ici
+            photo: cond.permis.photo
+         };
+      })
+      .filter(Boolean);
   }
 };

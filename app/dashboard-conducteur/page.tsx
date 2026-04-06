@@ -141,8 +141,21 @@ export default function DashboardConducteur() {
             filter: `conducteur_id=eq.${profile.id}`
           },
           (payload) => {
-            console.log('New fine detected!', payload);
+            console.log("🔔 Nouvelle amende détectée en temps réel !", payload);
             handleNewFine(payload.new as Amende);
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'fines_issued',
+            filter: `conducteur_id=eq.${profile.id}`
+          },
+          (payload) => {
+            console.log("📝 Mise à jour d'amende détectée :", payload);
+            handleUpdateFine(payload.new as Amende);
           }
         )
         .subscribe();
@@ -165,10 +178,23 @@ export default function DashboardConducteur() {
     setShowNewFineToast(true);
     playBip();
 
-    // Reset wiggle after animation completes
-    setTimeout(() => setIsBellWiggling(false), 800);
+    // Reset wiggle state for next time
+    setTimeout(() => setIsBellWiggling(false), 1000);
     // Hide toast after 5 seconds
     setTimeout(() => setShowNewFineToast(false), 5000);
+  };
+
+  const handleUpdateFine = (fine: Amende) => {
+    // Si l'amende est marquée comme payée, on la retire de la liste des notifications
+    if (fine.statut === 'PAYEE') {
+      setRecentUnpaidFines(prev => prev.filter(f => f.id !== fine.id));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      
+      // Si le toast affichait cette amende, on le cache
+      if (recentUnpaidFines[0]?.id === fine.id) {
+        setShowNewFineToast(false);
+      }
+    }
   };
 
   const playBip = () => {
@@ -380,9 +406,13 @@ export default function DashboardConducteur() {
                     setUnreadCount(0); // Reset count when opening
                   }
                 }}
-                className={`relative bg-white/20 p-2 rounded-full outline-none transition-all hover:scale-105 active:scale-95 ${isBellWiggling ? 'bell-wiggle' : ''}`}
+                className={`relative bg-white/20 p-2 rounded-full outline-none transition-all hover:scale-105 active:scale-95 ${isBellWiggling ? 'bell-wiggle shadow-[0_0_15px_rgba(233,177,30,0.5)]' : ''}`}
               >
-                <Bell className="w-5 h-5 text-black" strokeWidth={2} />
+                <Bell 
+                  key={isBellWiggling ? 'wiggling' : 'idle'} 
+                  className="w-5 h-5 text-black" 
+                  strokeWidth={2} 
+                />
                 
                 {unreadCount > 0 && (
                   <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-[#e9b11e] flex items-center justify-center">
@@ -395,7 +425,7 @@ export default function DashboardConducteur() {
               {showNewFineToast && recentUnpaidFines.length > 0 && (
                 <div 
                   onClick={() => router.push(`/statut-fiscal?tab=AMENDES&fineId=${recentUnpaidFines[0].id}&paymentFlow=true`)}
-                  className="absolute top-0 right-12 whitespace-nowrap bg-white shadow-xl border border-gray-100 rounded-xl px-4 py-2 flex items-center gap-2 cursor-pointer toast-entrance hover:bg-gray-50 transition-colors z-50"
+                  className="absolute top-0 right-14 whitespace-nowrap bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-yellow-200 rounded-xl px-4 py-2.5 flex items-center gap-3 cursor-pointer toast-entrance hover:bg-gray-50 transition-all z-[100] min-w-[200px]"
                 >
                   <span className="text-sm font-black text-[#1e3b6a]">🚨 Nouvelle amende !</span>
                   <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>

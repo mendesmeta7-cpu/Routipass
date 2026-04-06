@@ -61,7 +61,7 @@ export interface Amende {
   nature_infraction?: string;
   montant: number;
   devise?: string;
-  statut: 'INPAYEE' | 'PAYEE';
+  statut: 'IMPAYÉE' | 'PAYEE';
   conducteur_id: string;
   agent_id?: string;
   date_emission?: string;

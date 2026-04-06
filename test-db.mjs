@@ -6,19 +6,14 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 
 async function check() {
   const { data, error } = await supabase
-    .from('conducteur_vehicule')
-    .select(`
-        conducteurs (
-          id,
-          nom,
-          prenom,
-          photo
-        )
-    `)
-    .limit(10);
+    .from('conducteurs')
+    .select('*')
+    .limit(1);
     
   console.log("Error:", error);
-  console.log("Data:", JSON.stringify(data, null, 2));
+  if (data && data.length > 0) {
+     console.log("Columns:", Object.keys(data[0]));
+  }
 }
 
 check();

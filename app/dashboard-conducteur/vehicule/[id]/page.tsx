@@ -140,7 +140,7 @@ export default function FicheVehiculePage() {
          
          {/* Main Vehicle Card */}
          <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-gray-100 flex flex-col items-center mb-6 relative mt-16 pt-0">
-            <div className="w-48 h-48 -mt-20 shrink-0 flex items-center justify-center">
+            <div className="w-48 h-48 -mt-20 shrink-0 flex items-center justify-center rounded-t-[2rem] overflow-hidden bg-white">
                <img src={getUsageIllustration(vehicule.usage_categorie || 'Privé')} alt={vehicule.marque} className="w-full h-full object-contain" />
             </div>
             
