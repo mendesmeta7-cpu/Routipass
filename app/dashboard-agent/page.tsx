@@ -147,7 +147,7 @@ export default function DashboardAgent() {
                  </button>
 
                  {/* Module 2: Recherche */}
-                 <button className="bg-white p-4 rounded-[1.5rem] lg:rounded-[2rem] shadow-sm shadow-slate-200/50 flex flex-col items-center justify-center gap-3 aspect-square transition-all hover:-translate-y-1 active:scale-95 hover:bg-slate-50">
+                 <button onClick={() => router.push('/dashboard-agent/recherche')} className="bg-white p-4 rounded-[1.5rem] lg:rounded-[2rem] shadow-sm shadow-slate-200/50 flex flex-col items-center justify-center gap-3 aspect-square transition-all hover:-translate-y-1 active:scale-95 hover:bg-slate-50">
                     <Search className="w-14 h-14 lg:w-16 lg:h-16 text-slate-800" strokeWidth={1.5} />
                     <span className="text-xs lg:text-sm font-bold text-slate-900">Recherche</span>
                  </button>

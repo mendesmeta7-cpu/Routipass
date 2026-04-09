@@ -48,7 +48,15 @@ export default function ConducteurPublicProfile() {
           return;
         }
 
-        setConducteur(profile);
+        const conducteurData = {
+          ...profile,
+          nom: profile.nom || profile.permis?.nom,
+          prenom: profile.prenom || profile.permis?.prenom,
+          photo: profile.photo || profile.permis?.photo,
+          categorie_permis: profile.categorie_permis || profile.permis?.categorie_permis
+        };
+
+        setConducteur(conducteurData);
 
         // 3. Fetch fleet
         const fleet = await conducteurService.getVehicules(profile.id);
@@ -94,112 +102,115 @@ export default function ConducteurPublicProfile() {
       <main className="w-full bg-white flex flex-col min-h-screen relative shadow-2xl md:rounded-[3rem] overflow-hidden">
         
         {/* HEADER SECTION (Restricted) */}
-        <section className="bg-[#1e3b6a] rounded-b-[2.5rem] pt-12 pb-24 px-6 md:px-12 lg:px-24 relative shrink-0">
+        <section className="bg-[#e9b11e] rounded-b-[2rem] pt-12 pb-24 px-6 md:px-12 lg:px-24 relative shrink-0">
           
           {/* Back Button */}
           <button
             onClick={() => router.back()}
             className="absolute top-10 left-6 outline-none hover:scale-105 transition-transform"
           >
-            <div className="relative bg-white/10 p-2 rounded-full border border-white/10">
-              <ChevronLeft className="w-5 h-5 text-white" strokeWidth={3} />
+            <div className="relative bg-white/20 p-2 rounded-full">
+              <ChevronLeft className="w-5 h-5 text-black" strokeWidth={2} />
             </div>
           </button>
 
           {/* Badge Vérifié (Suggestion) */}
           <div className="absolute top-10 right-6 flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-full backdrop-blur-md">
-             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-             <span className="text-[10px] font-black uppercase text-emerald-400 tracking-widest">Identité Vérifiée PNC</span>
+             <ShieldCheck className="w-4 h-4 text-emerald-600" />
+             <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Identité Vérifiée PNC</span>
           </div>
 
-          <div className="flex gap-5 items-start pr-8 mt-4">
-            <div className="w-24 h-24 rounded-[2rem] bg-white border-[4px] border-white/20 shadow-2xl overflow-hidden shrink-0 transform -rotate-3">
+          <div className="flex gap-4 items-start pr-8 mt-4">
+            <div className="w-20 h-20 rounded-full bg-white border-[3px] border-white shadow-xl overflow-hidden shrink-0 mt-1 object-cover">
                {conducteur.photo ? (
                  <img src={conducteur.photo} alt="Profile" className="w-full h-full object-cover" />
                ) : (
-                 <div className="w-full h-full bg-blue-100 flex items-center justify-center text-blue-300">
-                    <User className="w-10 h-10" />
+                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <User className="text-gray-400 w-6 h-6" />
                  </div>
                )}
             </div>
 
-            <div className="flex flex-col flex-1 gap-1">
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+            <div className="flex flex-col flex-1">
+              <h1 className="text-2xl font-black font-serif text-black tracking-tight leading-none mb-1">
                 {conducteur.prenom} {conducteur.nom}
               </h1>
-              <div className="flex items-center gap-2">
-                 <div className="px-2 py-0.5 bg-white/10 rounded text-[9px] font-bold text-white/70 uppercase">Permis</div>
-                 <p className="text-sm font-black text-white/95 tracking-wider">
-                   {conducteur.numero_permis}
-                 </p>
-              </div>
+              <p className="text-xs font-bold text-black/80">
+                Permis : {conducteur.numero_permis}
+              </p>
             </div>
           </div>
 
-          <div className="mt-8 flex justify-end px-2">
-            <Button 
+          <div className="mt-4 flex justify-end gap-3 px-2">
+            <button 
                onClick={() => setShowContactModal(true)}
-               className="bg-[#e9b11e] hover:bg-yellow-500 text-black px-10 py-6 rounded-2xl shadow-xl shadow-yellow-900/20 font-black text-sm tracking-widest uppercase"
+               className="bg-white px-6 py-2 rounded-2xl shadow-sm hover:bg-gray-50 font-black text-xs tracking-widest uppercase text-black transition-all"
             >
               Contact
-            </Button>
+            </button>
+            <button 
+               className="bg-red-500 hover:bg-red-600 px-6 py-2 rounded-2xl shadow-sm hover:shadow-md font-black text-xs tracking-widest uppercase text-white transition-all focus:outline-none"
+            >
+              Signaler
+            </button>
           </div>
         </section>
 
         {/* GENERAL INFO (Read Only) */}
-        <div className="px-5 md:px-12 lg:px-24 -mt-16 relative z-10 w-full shrink-0">
-          <div className="bg-white rounded-[2rem] p-6 shadow-2xl shadow-blue-900/5 border border-gray-100 space-y-4">
-             <div className="flex items-center gap-3 mb-2">
-                <FileSignature className="w-5 h-5 text-[#1e3b6a]" />
-                <h2 className="text-sm font-black text-[#1e3b6a] uppercase tracking-widest">Informations Générales</h2>
-             </div>
+        <div className="px-5 md:px-12 lg:px-24 -mt-20 relative z-10 w-full shrink-0">
+          <h2 className="text-[14px] font-black text-[#1e3b6a] mb-2 px-1 tracking-tight">Infos générales</h2>
+          <div className="bg-white rounded-3xl p-5 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] border border-gray-100 flex flex-col gap-2 relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-20 h-20 bg-gray-50 rounded-bl-full -z-10"></div>
              
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-8">
-               <InfoItem label="Nationalité" value={conducteur.permis?.nationalite || "N/A"} />
-               <InfoItem label="Date de naissance" value={conducteur.permis?.date_naissance || "N/A"} />
-               <InfoItem label="Catégorie Permis" value={conducteur.categorie_permis || conducteur.permis?.categorie_permis || "N/A"} />
-               <InfoItem label="Ville / Commune" value={`${conducteur.ville || ""} - ${conducteur.commune || ""}`} />
-             </div>
-             
-             <div className="pt-3 border-t border-gray-50">
-                <InfoItem label="Adresse de résidence" value={conducteur.adresse || "N/A"} />
+             <div className="space-y-1.5">
+               <div className="text-[12px] text-gray-700 font-medium">
+                  <span className="font-bold text-gray-900">Nationalité:</span> {conducteur.permis?.nationalite || "Congolaise"}
+               </div>
+               <div className="text-[12px] text-gray-700 font-medium">
+                  <span className="font-bold text-gray-900">Date de naissance :</span> {conducteur.permis?.date_naissance || "N/A"}
+               </div>
+               <div className="text-[12px] text-gray-700 font-medium">
+                  <span className="font-bold text-gray-900">Catégorie Permis :</span> {conducteur.categorie_permis || conducteur.permis?.categorie_permis || "N/A"}
+               </div>
+               <div className="text-[12px] text-gray-700 font-medium">
+                  <span className="font-bold text-gray-900">Ville / Commune:</span> {conducteur.ville || "Kinshasa"} - {conducteur.commune || ""}
+               </div>
+               <div className="text-[12px] text-gray-700 font-medium leading-tight truncate">
+                  <span className="font-bold text-gray-900">Adresse :</span> {conducteur.adresse || "N/A"}
+               </div>
              </div>
           </div>
         </div>
 
         {/* EXPERIENCE BUTTON (Keep) */}
-        <div className="px-5 md:px-12 lg:px-24 mt-6">
-           <button className="w-full bg-[#f4b616]/10 hover:bg-[#f4b616]/20 text-[#1e3b6a] py-5 rounded-2xl border-2 border-dashed border-[#f4b616]/30 flex items-center justify-center gap-3 transition-all active:scale-95 group">
-              <History className="w-5 h-5 text-[#f4b616] group-hover:rotate-12 transition-transform" />
-              <span className="font-black text-sm uppercase tracking-widest">Consulter Expérience et Casier</span>
+        <div className="px-5 md:px-12 lg:px-24 mt-5">
+           <button className="w-full bg-[#f4b616] hover:bg-[#e6a800] text-black py-4 rounded-xl flex items-center justify-center gap-3 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 font-bold tracking-wide">
+              <History className="w-5 h-5 text-black" />
+              <span className="text-sm">Expérience et casier</span>
            </button>
         </div>
 
         {/* FLEET SECTION */}
-        <div className="flex-1 px-5 md:px-12 lg:px-24 mt-8 pb-10">
-           <h2 className="text-xl font-black text-[#1e3b6a] mb-6 px-1 flex items-center gap-3">
-              Flotte du conducteur
-              <span className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full uppercase">{vehicules.length} UNITÉS</span>
-           </h2>
-
-           <div className="space-y-4">
+        <div className="flex-1 w-full flex flex-col mt-2">
+           <h2 className="text-[14px] font-black text-gray-800 tracking-tight ml-5 md:ml-12 lg:ml-24 mt-5 mb-1 px-1">Flotte Actuelle</h2>
+           <div className="w-full px-5 md:px-12 lg:px-24 pb-10 flex flex-col gap-4 mt-2">
              {vehicules.length === 0 ? (
-               <div className="py-12 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 flex flex-col items-center text-center px-6">
-                  <p className="text-sm font-bold text-gray-400">Ce conducteur n'a aucun véhicule associé à son profil.</p>
+               <div className="py-8 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 flex flex-col items-center text-center px-6">
+                  <p className="text-sm font-bold text-gray-400">Aucun véhicule associé</p>
                </div>
              ) : (
                vehicules.map((v, idx) => (
-                 <div key={v.id} className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 animate-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
-                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center p-2 shrink-0">
-                       <img src={getUsageIllustration(v.usage_categorie || 'Privé')} alt="" className="w-full h-full object-contain" />
+                 <div key={v.id} className="w-full bg-white rounded-3xl p-3 sm:p-5 shadow-sm border border-gray-100 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-5 relative transition-all hover:shadow-md animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both" style={{ animationDelay: `${idx * 100}ms` }}>
+                    <div className="w-16 h-16 sm:w-24 sm:h-24 shrink-0 flex items-center justify-center p-1">
+                       <img src={getUsageIllustration(v.usage_categorie || 'Privé')} alt={v.marque} className="w-full h-full object-contain drop-shadow-sm" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                       <h4 className="font-black text-[#1e3b6a] text-base truncate">{v.marque} {v.modele}</h4>
-                       <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{v.plaque}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl">
-                       <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Actif</span>
+                    <div className="flex-1 flex flex-col min-w-[150px]">
+                       <div className="flex items-center gap-2 flex-wrap">
+                         <h4 className="font-black text-[#1e3b6a] text-sm sm:text-lg leading-none">{v.marque} <span className="text-gray-500 font-semibold">{v.modele}</span></h4>
+                         <span className="text-[9px] sm:text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase tracking-widest leading-none whitespace-nowrap">
+                           {v.plaque}
+                         </span>
+                       </div>
                     </div>
                  </div>
                ))
@@ -259,11 +270,3 @@ export default function ConducteurPublicProfile() {
   );
 }
 
-function InfoItem({ label, value }: { label: string, value: string }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
-      <span className="text-sm font-black text-[#1e3b6a] truncate">{value}</span>
-    </div>
-  );
-}

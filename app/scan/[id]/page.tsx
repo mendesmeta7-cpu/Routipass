@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { conducteurService } from '@/services/conducteurs';
 import { Vehicule, Conducteur } from '@/types';
 import { getUsageIllustration, getValidityStatus } from '@/utils/vehicleUtils';
-import { ShieldCheck, ShieldAlert, ChevronRight, FileText, X, House, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, ChevronRight, FileText, X, House, ArrowLeft, AlertCircle } from 'lucide-react';
 
 export default function ScanVerificationPage() {
   const params = useParams();
@@ -17,6 +17,8 @@ export default function ScanVerificationPage() {
   const [isLinked, setIsLinked] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCarteRose, setShowCarteRose] = useState(false);
+  const [unpaidFines, setUnpaidFines] = useState<any[]>([]);
+  const [selectedAmende, setSelectedAmende] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,6 +40,9 @@ export default function ScanVerificationPage() {
           
           const linked = await conducteurService.isVehiculeLinked(fetchedDriver.id, fetchedVehicule.id);
           setIsLinked(linked);
+
+          const fines = await conducteurService.getFinesIssued(fetchedDriver.id);
+          setUnpaidFines(fines.filter((f: any) => f.statut === 'IMPAYÉE'));
         } else {
           setIsLinked(false);
         }
@@ -92,22 +97,57 @@ export default function ScanVerificationPage() {
   const ctDays = getDaysDiff(vehicule.date_prochain_controle);
   const vigDays = getDaysDiff(vehicule.date_expiration_vignette);
 
-  const isExpired = assDays < 0 || ctDays < 0 || vigDays < 0;
-  const isWarning = !isExpired && (assDays <= 2 || ctDays <= 2 || vigDays <= 2);
-  const isAllValid = !isExpired && !isWarning;
+  const isFiscalExpired = assDays < 0 || ctDays < 0 || vigDays < 0;
+  const isFiscalWarning = !isFiscalExpired && (assDays <= 2 || ctDays <= 2 || vigDays <= 2);
+  const hasFiscalIssue = isFiscalExpired || isFiscalWarning;
+
+  const amendeStatusList = unpaidFines.map(amende => {
+     const dateEm = amende.date_emission ? new Date(amende.date_emission) : new Date();
+     const delai = amende.fine_types?.delai_paiement ?? 30;
+     const expirationDate = new Date(dateEm);
+     expirationDate.setDate(expirationDate.getDate() + delai);
+     expirationDate.setHours(0, 0, 0, 0);
+     return Math.ceil((expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  });
+
+  const worstFineDays = amendeStatusList.length > 0 ? Math.min(...amendeStatusList) : Infinity;
+  const isFineExpired = worstFineDays <= 0;
+  const isFineWarning = worstFineDays > 0 && worstFineDays <= 2;
+  const hasFineIssue = isFineExpired || isFineWarning;
 
   let headerColor = 'bg-emerald-500 shadow-emerald-100';
-  let statusTitle = 'Contrôle Valide';
   let statusIcon = <ShieldCheck className="w-20 h-20 mb-4 animate-in zoom-in duration-500" />;
+  let statusContent = <h1 className="text-3xl font-black tracking-tight">✅ CONDUCTEUR EN RÈGLE</h1>;
 
-  if (isExpired) {
-    headerColor = 'bg-rose-600 shadow-rose-100';
-    statusTitle = 'Infraction Fiscale';
-    statusIcon = <ShieldAlert className="w-20 h-20 mb-4 animate-bounce" />;
-  } else if (isWarning) {
-    headerColor = 'bg-amber-500 shadow-amber-100';
-    statusTitle = 'Avertissement';
-    statusIcon = <ShieldAlert className="w-20 h-20 mb-4 animate-pulse" />;
+  if (hasFiscalIssue && hasFineIssue) {
+     headerColor = 'bg-rose-600 shadow-rose-100';
+     statusIcon = <ShieldAlert className="w-20 h-20 mb-4 animate-bounce" />;
+     statusContent = (
+        <div className="w-full max-w-[280px] md:max-w-md mx-auto overflow-hidden relative">
+           <div className="flex w-max animate-marquee-scrolling">
+               <div className="flex gap-8 px-4 items-center">
+                   <span className="text-xl md:text-2xl font-black tracking-tight">💰 RETARD FISCAL CONSTATÉ</span>
+                   <span className="text-white/50">•••</span>
+                   <span className="text-xl md:text-2xl font-black tracking-tight">🚨 DÉPASSEMENT CRITIQUE AMENDE</span>
+                   <span className="text-white/50">•••</span>
+               </div>
+               <div className="flex gap-8 px-4 items-center">
+                   <span className="text-xl md:text-2xl font-black tracking-tight">💰 RETARD FISCAL CONSTATÉ</span>
+                   <span className="text-white/50">•••</span>
+                   <span className="text-xl md:text-2xl font-black tracking-tight">🚨 DÉPASSEMENT CRITIQUE AMENDE</span>
+                   <span className="text-white/50">•••</span>
+               </div>
+           </div>
+        </div>
+     );
+  } else if (isFiscalExpired || isFineExpired) {
+     headerColor = 'bg-rose-600 shadow-rose-100';
+     statusIcon = <ShieldAlert className="w-20 h-20 mb-4 animate-bounce" />;
+     statusContent = <h1 className="text-3xl font-black tracking-tight">{isFiscalExpired ? 'Infraction Fiscale' : 'Infraction Amende'}</h1>;
+  } else if (isFiscalWarning || isFineWarning) {
+     headerColor = 'bg-amber-500 shadow-amber-100';
+     statusIcon = <ShieldAlert className="w-20 h-20 mb-4 animate-pulse" />;
+     statusContent = <h1 className="text-3xl font-black tracking-tight">Avertissement</h1>;
   }
 
   const assOk = assDays >= 0;
@@ -117,6 +157,16 @@ export default function ScanVerificationPage() {
   return (
     <main className="w-full min-h-screen bg-[#f8fbff] flex flex-col relative overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
       
+      <style>{`
+        @keyframes custom-marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee-scrolling {
+          animation: custom-marquee 12s linear infinite;
+        }
+      `}</style>
+
       {/* NAV TOP */}
       <div className="absolute top-6 left-6 z-50">
          <button 
@@ -131,8 +181,8 @@ export default function ScanVerificationPage() {
       <div className={`pt-12 pb-24 px-6 md:px-12 lg:px-24 shrink-0 relative rounded-b-[3rem] transition-all duration-700 shadow-xl ${headerColor}`}>
          <div className="flex flex-col items-center text-center mt-4 text-white">
             {statusIcon}
-            <h1 className="text-3xl font-black tracking-tight">{statusTitle}</h1>
-            <p className="text-white/80 font-bold mt-1 uppercase tracking-[0.3em] text-[10px]">Statut Temps Réel</p>
+            {statusContent}
+            <p className="text-white/80 font-bold mt-2 uppercase tracking-[0.3em] text-[10px]">Statut Temps Réel</p>
          </div>
       </div>
 
@@ -208,6 +258,86 @@ export default function ScanVerificationPage() {
             >
                <FileText className="w-5 h-5" /> Vérifier Carte Rose
             </button>
+         </div>
+
+         {/* BLOC AMENDES IMPAYEES */}
+         {unpaidFines.length > 0 && (
+            <div className="bg-white rounded-[2rem] p-6 shadow-lg border border-gray-100 flex flex-col relative w-full">
+               <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                     <AlertCircle className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-[#1e3b6a] text-lg leading-tight uppercase tracking-tight">Amendes Impayées</h3>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">{unpaidFines.length} infraction(s) en attente</p>
+                  </div>
+               </div>
+               
+               <div className="flex flex-col gap-4">
+                  {unpaidFines.map((amende) => {
+                     const dateEm = amende.date_emission ? new Date(amende.date_emission) : new Date();
+                     const delai = amende.fine_types?.delai_paiement ?? 30; // 30 is default fallback if null
+                     const expirationDate = new Date(dateEm);
+                     expirationDate.setDate(expirationDate.getDate() + delai);
+                     expirationDate.setHours(0, 0, 0, 0);
+                     const tdiff = expirationDate.getTime() - today.getTime();
+                     const daysDiff = Math.ceil(tdiff / (1000 * 60 * 60 * 24));
+                     
+                     let colorClasses = "bg-green-50 border-green-200";
+                     let textClasses = "text-green-700";
+                     let statusText = `✅ ${daysDiff} jours restants`;
+                     let dotColor = "bg-green-500";
+                     let isCritical = false;
+
+                     if (daysDiff <= 0) {
+                        colorClasses = "bg-red-50 border-red-200 shadow-red-100 shadow-md animate-pulse";
+                        textClasses = "text-red-700";
+                        statusText = `⚠️ DÉPASSEMENT CRITIQUE : ${Math.abs(daysDiff)} jours de retard`;
+                        dotColor = "bg-red-600 animate-ping";
+                        isCritical = true;
+                     } else if (daysDiff <= 2) {
+                        colorClasses = "bg-amber-50 border-amber-200";
+                        textClasses = "text-amber-700";
+                        statusText = `⚠️ ${daysDiff} jours restants`;
+                        dotColor = "bg-amber-500";
+                     }
+
+                     const displayNature = amende.fine_types?.name || amende.nature_infraction || amende.motif || "Infraction non spécifiée";
+
+                     return (
+                        <div key={amende.id} className={`p-5 rounded-2xl border flex flex-col gap-3 relative transition-all shadow-sm ${colorClasses}`}>
+                           <div className="flex justify-between items-start gap-4">
+                              <div className="flex-1 min-w-0">
+                                 <h4 className="font-black text-sm text-[#1e3b6a] uppercase tracking-wide leading-tight truncate">
+                                    {displayNature}
+                                 </h4>
+                                 <div className={`text-xl font-black mt-1 tracking-tight ${textClasses}`}>
+                                    {(amende.montant || 0).toLocaleString()} {amende.devise || "CDF"}
+                                 </div>
+                              </div>
+                              <button 
+                                 onClick={() => setSelectedAmende(amende)}
+                                 className="px-4 py-2 bg-white hover:bg-gray-50 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-sm border border-gray-100 transition-colors text-black shrink-0"
+                              >
+                                 Détails
+                              </button>
+                           </div>
+                           <div className="flex items-center gap-2 mt-1 bg-white/50 p-2 rounded-xl border border-black/5">
+                              <div className="w-2.5 h-2.5 rounded-full flex shrink-0 items-center justify-center relative ml-1">
+                                 <div className={`absolute w-full h-full rounded-full ${dotColor} ${isCritical ? '' : 'opacity-80'}`}></div>
+                              </div>
+                              <span className={`text-[10px] font-black uppercase tracking-widest ${isCritical ? 'text-red-600' : textClasses}`}>
+                                 {statusText}
+                              </span>
+                           </div>
+                        </div>
+                     );
+                  })}
+               </div>
+            </div>
+         )}
+
+         <div className="bg-white rounded-[2rem] p-6 shadow-lg border border-gray-100 flex flex-col items-center relative">
 
             {/* SUBMIT FINE BUTTON */}
             <button 
@@ -226,6 +356,81 @@ export default function ScanVerificationPage() {
             </button>
          </div>
       </div>
+
+      {/* AMENDE DETAILS MODAL */}
+      {selectedAmende && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#1e3b6a]/80 backdrop-blur-sm animate-in fade-in duration-300 p-0 sm:p-4">
+           <div className="bg-white rounded-t-[2.5rem] sm:rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-500 max-h-[90vh] flex flex-col">
+              
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-[#f8fbff]">
+                 <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                       <AlertCircle className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-[#1e3b6a] text-lg leading-tight uppercase">Détails Infraction</h3>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Base de données de Police</p>
+                    </div>
+                 </div>
+                 <button onClick={() => setSelectedAmende(null)} className="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2.5 rounded-full transition-colors">
+                    <X className="w-5 h-5" />
+                 </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto flex-1 bg-white space-y-6">
+                 {/* Nature */}
+                 <div className="bg-gray-50 p-4 rounded-2xl flex col-span-full flex-col text-center">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nature de l'infraction</span>
+                    <span className="font-black text-[#1e3b6a] text-lg mt-0.5">{selectedAmende.fine_types?.name || selectedAmende.nature_infraction || selectedAmende.motif || "Non spécifiée"}</span>
+                 </div>
+
+                 {/* Montant & Date */}
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-red-50/50 p-4 rounded-2xl flex flex-col items-center justify-center text-center border p-2 border-red-100">
+                       <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Montant</span>
+                       <span className="font-black text-red-600 text-lg mt-0.5">{(selectedAmende.montant || 0).toLocaleString()} {selectedAmende.devise || "CDF"}</span>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date & Heure</span>
+                       <span className="font-bold text-gray-900 text-[11px] mt-1 leading-tight">
+                         {selectedAmende.date_emission ? new Date(selectedAmende.date_emission).toLocaleString('fr-FR', {
+                           day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                         }) : 'Inconnue'}
+                       </span>
+                    </div>
+                 </div>
+                 
+                 {/* Lieu (si dispo) */}
+                 {selectedAmende.lieu && (
+                    <div className="bg-gray-50 p-4 rounded-2xl flex flex-col">
+                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Lieu de l'infraction</span>
+                       <span className="font-bold text-gray-800 text-sm">{selectedAmende.lieu}</span>
+                    </div>
+                 )}
+
+                 {/* Note */}
+                 <div className="bg-blue-50 p-4 rounded-2xl flex flex-col border border-blue-100">
+                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                       <FileText className="w-3 h-3" /> Rapport de l'agent
+                    </span>
+                    <p className="font-medium text-blue-900 text-sm leading-relaxed italic">
+                      "{selectedAmende.remarques || 'Aucune observation supplémentaire renseignée par l\'agent verbalisateur.'}"
+                    </p>
+                 </div>
+
+                 {/* Photo */}
+                 {selectedAmende.photo_url && (
+                    <div className="rounded-2xl overflow-hidden border-2 border-gray-100 shadow-sm relative mt-2">
+                       <img src={selectedAmende.photo_url} alt="Preuve de l'infraction" className="w-full h-auto object-cover" />
+                       <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded backdrop-blur-sm">
+                         Preuve Photo
+                       </div>
+                    </div>
+                 )}
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* CARTE ROSE MODAL */}
       {showCarteRose && (
