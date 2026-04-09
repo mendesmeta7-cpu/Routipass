@@ -123,7 +123,7 @@ export default function RechercheConducteurPage() {
                  return (
                    <button 
                      key={conducteur.id}
-                     onClick={() => router.push(`/conducteur-public/${conducteur.id}`)}
+                     onClick={() => router.push(`/conducteur-public/${conducteur.driver_id}`)}
                      className="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100 flex items-center gap-4 text-left transition-all hover:shadow-md hover:-translate-y-1 active:scale-95 group focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                    >
                       <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center shrink-0 border-2 border-white shadow-sm ring-2 ring-slate-50 group-hover:ring-emerald-100 overflow-hidden transition-all">

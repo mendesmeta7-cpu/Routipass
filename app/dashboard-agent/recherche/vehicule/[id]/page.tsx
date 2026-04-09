@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Car, Loader2, User, ShieldCheck, XCircle, AlertTriangle, UserCircle2, Settings } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { getUsageIllustration } from "@/utils/vehicleUtils";
 
 export default function ResultatVehiculePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -34,7 +35,6 @@ export default function ResultatVehiculePage({ params }: { params: Promise<{ id:
             conducteurs (
               id,
               driver_id,
-              photo_url,
               permis (
                 nom,
                 prenom,
@@ -106,8 +106,8 @@ export default function ResultatVehiculePage({ params }: { params: Promise<{ id:
         
         {/* Plaque & Identité du véhicule */}
         <div className="bg-white p-8 rounded-[3rem] shadow-xl shadow-blue-900/5 relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-8 text-slate-50">
-              <Car className="w-32 h-32" />
+           <div className="absolute top-0 right-0 p-4 opacity-5">
+              <img src={getUsageIllustration(vehicule.usage_categorie || 'Privé')} alt="usage" className="w-48 h-48 object-contain drop-shadow-sm" />
            </div>
            
            <div className="relative z-10">
@@ -128,6 +128,22 @@ export default function ResultatVehiculePage({ params }: { params: Promise<{ id:
                 <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100">
                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Année</p>
                    <p className="text-sm font-bold text-slate-900">{vehicule.annee || '-'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 col-span-2">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">N° de Châssis</p>
+                   <p className="text-sm font-bold text-slate-900 font-mono tracking-wider break-all">{vehicule.chassis_no || '-'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Énergie</p>
+                   <p className="text-sm font-bold text-slate-900">{vehicule.energie || '-'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Puissance</p>
+                   <p className="text-sm font-bold text-slate-900">{vehicule.puissance || '-'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 col-span-2">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">PTAC</p>
+                   <p className="text-sm font-bold text-slate-900">{vehicule.ptac || '-'}</p>
                 </div>
              </div>
            </div>
@@ -185,11 +201,11 @@ export default function ResultatVehiculePage({ params }: { params: Promise<{ id:
              <div className="space-y-4">
                {conducteurs.map((cond) => {
                  const fullName = cond.permis ? `${cond.permis.nom} ${cond.permis.prenom}` : "Conducteur Inconnu";
-                 const photo = cond.photo_url || cond.permis?.photo;
+                 const photo = cond.permis?.photo;
                  return (
                    <button 
                      key={cond.id}
-                     onClick={() => router.push(`/conducteur-public/${cond.id}`)}
+                     onClick={() => router.push(`/conducteur-public/${cond.driver_id}`)}
                      className="w-full flex items-center p-3 hover:bg-slate-50 transition-colors rounded-2xl group text-left"
                    >
                      <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 shrink-0 border-2 border-white shadow-sm ring-2 ring-slate-100 group-hover:ring-blue-100">
@@ -208,6 +224,17 @@ export default function ResultatVehiculePage({ params }: { params: Promise<{ id:
                })}
              </div>
            )}
+        </div>
+
+        {/* Actions */}
+        <div className="pt-4">
+           <button 
+             className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 py-4 rounded-[2rem] flex items-center justify-center gap-3 shadow-sm transition-all focus:outline-none"
+             onClick={() => alert("Fonctionnalité 'Signaler ce véhicule' bientôt disponible.")}
+           >
+              <AlertTriangle className="w-5 h-5" />
+              <span className="text-sm font-black uppercase tracking-widest">Signaler ce véhicule</span>
+           </button>
         </div>
 
       </main>
