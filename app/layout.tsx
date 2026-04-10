@@ -39,7 +39,19 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
       </head>
       <body className={`${inter.className} bg-slate-50 text-slate-900 min-h-screen flex flex-col`}>
-        <Toaster position="top-center" richColors />
+        <Toaster 
+          position="top-right" 
+          richColors={false}
+          toastOptions={{
+            style: {
+              background: '#0f172a', // Deep Navy instead of Zinc-900
+              color: '#fff',
+              border: '1px solid #1e3a8a', // Primary blue border
+              borderRadius: '1.25rem',
+              boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+            },
+          }}
+        />
         {children}
       </body>
     </html>

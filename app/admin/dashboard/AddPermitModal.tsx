@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { adminService } from "@/services/admin";
 import { Loader2, UserPlus, ShieldCheck, Fingerprint, Calendar, Camera, Copy, Check } from "lucide-react";
 import { useEffect } from "react";
@@ -147,22 +148,19 @@ export function AddPermitModal({ isOpen, onClose, onSuccess }: AddPermitModalPro
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Catégorie</label>
-            <div className="relative">
-              <select 
-                className="flex h-14 w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-2 text-sm font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none"
+            <div className="space-y-1">
+              <CustomSelect
+                label="Catégorie"
+                options={[
+                  { label: "A (Moto)", value: "A" },
+                  { label: "B (Voiture)", value: "B" },
+                  { label: "C (Lourd)", value: "C" },
+                  { label: "D (Public)", value: "D" },
+                ]}
                 value={formData.categorie_permis}
-                onChange={(e) => setFormData({...formData, categorie_permis: e.target.value})}
-              >
-                <option value="A">A (Moto)</option>
-                <option value="B">B (Voiture)</option>
-                <option value="C">C (Lourd)</option>
-                <option value="D">D (Public)</option>
-              </select>
-              <ShieldCheck className="w-4 h-4 text-slate-300 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                onChange={(val) => setFormData({...formData, categorie_permis: val})}
+              />
             </div>
-          </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Naissance</label>
             <div className="relative">
@@ -205,7 +203,7 @@ export function AddPermitModal({ isOpen, onClose, onSuccess }: AddPermitModalPro
 
         <div className="flex gap-4 pt-4">
           <Button type="button" variant="ghost" onClick={onClose} className="flex-1 h-14 rounded-2xl text-slate-400 font-bold uppercase tracking-widest text-xs">Annuler</Button>
-          <Button type="submit" className="flex-1 h-14 rounded-2xl bg-indigo-600 text-white font-black tracking-widest shadow-xl shadow-indigo-100" disabled={loading}>
+          <Button type="submit" className="flex-1 h-14 rounded-2xl bg-[#1e3a8a] text-white font-black tracking-widest shadow-xl shadow-blue-100 hover:bg-[#152e6f] transition-all" disabled={loading}>
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "ENREGISTRER"}
           </Button>
         </div>

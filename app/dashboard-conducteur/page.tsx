@@ -501,13 +501,6 @@ export default function DashboardConducteur() {
                   Permis : {conducteur.numero_permis}
                 </p>
                 
-                <div className="relative mt-2 h-14 w-full">
-                   <textarea 
-                     disabled
-                     placeholder="Description..."
-                     className="w-full h-full resize-none border-2 border-dashed border-black/40 rounded-t-xl rounded-br-xl bg-transparent p-2 text-xs text-black/80 font-medium"
-                   />
-                </div>
               </div>
             </div>
 
@@ -668,7 +661,7 @@ export default function DashboardConducteur() {
               onClick={() => setShowAddModal(true)}
               className="w-full h-24 bg-gradient-to-r from-[#eef4ff] to-[#f8fbff] rounded-3xl p-4 flex items-center justify-between gap-4 shadow-[#cfdeff]/20 shadow-xl relative overflow-hidden group border-2 border-dashed border-[#caddff] hover:border-[#8ab3f9] shrink-0 mb-6"
            >
-              <span className="text-[14px] font-black tracking-tight text-[#1e3b6a] z-10 w-full text-left">Associer une nouvelle unité</span>
+              <span className="text-[14px] font-black tracking-tight text-[#1e3b6a] z-10 w-full text-left">Ajoutez un véhicule</span>
               
               {/* Animations Circle */}
               <div className="w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center relative shadow-sm z-10 shrink-0">
@@ -701,7 +694,7 @@ export default function DashboardConducteur() {
             <div className="w-14 h-14 bg-[#f0f9ff] rounded-2xl flex items-center justify-center mb-5 shrink-0">
               <Car className="w-7 h-7 text-[#1e3b6a]" />
             </div>
-            <h3 className="text-xl font-bold text-[#1e3b6a] text-center tracking-tight mb-2">Associer un véhicule</h3>
+            <h3 className="text-xl font-bold text-[#1e3b6a] text-center tracking-tight mb-2">Ajouter un véhicule</h3>
             <p className="text-sm text-center text-gray-500 mb-8 font-medium">Entrez le numéro de plaque unique pour lancer la requête sur la base de données.</p>
 
             <form onSubmit={(e) => { e.preventDefault(); setShowAddModal(false); handleSearch(); }} className="w-full flex flex-col gap-4">
@@ -715,7 +708,7 @@ export default function DashboardConducteur() {
                 <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
               </div>
               <Button type="submit" disabled={loadingSearch || !plaque} className="h-14 rounded-2xl bg-[#1E3A8A] hover:bg-[#152e6f] text-white shadow-lg shadow-blue-900/10 w-full flex items-center justify-center font-bold text-sm tracking-wide">
-                {loadingSearch ? <Loader2 className="w-5 h-5 animate-spin" /> : "RECHERCHER UNITE"}
+                {loadingSearch ? <Loader2 className="w-5 h-5 animate-spin" /> : "RECHERCHER VÉHICULE"}
               </Button>
             </form>
 

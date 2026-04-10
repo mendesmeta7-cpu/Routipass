@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, User, Loader2, Search, AlertCircle, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function RechercheConducteurPage() {
   const router = useRouter();
@@ -77,22 +79,24 @@ export default function RechercheConducteurPage() {
         </div>
 
         {/* Search Bar */}
-        <form onSubmit={handleSearch} className="relative w-full max-w-lg mx-auto">
-           <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
-           <input 
-             type="text"
-             placeholder="Nom, Prénom ou ID (RP-DR-...)"
-             value={search}
-             onChange={(e) => setSearch(e.target.value)}
-             className="w-full h-14 pl-12 pr-32 rounded-[1.5rem] bg-emerald-50/50 border border-emerald-100 font-bold text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all uppercase tracking-wider placeholder:normal-case"
-           />
-           <button 
-             type="submit" 
-             disabled={loading || !search.trim()}
-             className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all disabled:opacity-50 shadow-md shadow-emerald-600/20"
-           >
-             {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Rechercher"}
-           </button>
+        <form onSubmit={handleSearch} className="relative w-full max-w-lg mx-auto flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600 z-10" />
+              <Input 
+                type="text"
+                placeholder="Nom, Prénom ou ID"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 h-14 rounded-2xl bg-emerald-50/30 border-emerald-100 font-bold uppercase tracking-wider text-base placeholder:normal-case"
+              />
+            </div>
+            <Button 
+              type="submit" 
+              disabled={loading || !search.trim()}
+              className="h-14 px-8 bg-[#1e3a8a] hover:bg-[#152e6f] rounded-2xl shadow-lg shadow-blue-900/10"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Rechercher"}
+            </Button>
         </form>
       </header>
 

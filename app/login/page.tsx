@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
 import { authService } from "@/services/auth";
 
 export default function LoginPage() {
@@ -87,9 +88,9 @@ export default function LoginPage() {
               ID Chauffeur / Agent
             </label>
             <div className="relative group">
-              <input 
+              <Input 
                 id="identifiant"
-                className="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-14 px-6 text-on-surface font-medium transition-all placeholder:text-outline/60 shadow-inner" 
+                className="rounded-full h-14 bg-surface-container/50 border-none shadow-inner px-8 placeholder:text-outline/40" 
                 placeholder="ex: RP-DR-000001" 
                 type="text"
                 value={identifiant}
@@ -106,9 +107,9 @@ export default function LoginPage() {
               {identifiant.startsWith("RP-DR") ? "Code PIN" : "Mot de Passe"}
             </label>
             <div className="relative group">
-              <input 
+              <Input 
                 id="password"
-                className={`w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-14 px-6 text-on-surface font-medium transition-all placeholder:text-outline/60 shadow-inner ${identifiant.startsWith("RP-DR") ? "tracking-[0.5em]" : ""}`} 
+                className={`rounded-full h-14 bg-surface-container/50 border-none shadow-inner px-8 placeholder:text-outline/40 ${identifiant.startsWith("RP-DR") ? "tracking-[0.5em]" : ""}`} 
                 placeholder={identifiant.startsWith("RP-DR") ? "••••" : "••••••••"} 
                 type="password"
                 value={motDePasse}

@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
 import { conducteurService } from "@/services/conducteurs";
 import { Permis } from "@/types";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function InscriptionPage() {
   const router = useRouter();
@@ -133,8 +135,8 @@ export default function InscriptionPage() {
               <div className="space-y-3 px-1">
                 <label className="text-on-background font-label font-bold text-sm ml-4">Numéro de permis national</label>
                 <div className="relative group">
-                  <input 
-                    className="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-14 px-6 text-on-surface font-black tracking-widest text-lg transition-all placeholder:text-outline/60 shadow-inner placeholder:tracking-normal placeholder:font-medium" 
+                  <Input 
+                    className="w-full bg-surface-container border-none h-14 px-8 text-on-surface font-black tracking-widest text-lg transition-all placeholder:text-outline/60 shadow-inner placeholder:tracking-normal placeholder:font-medium rounded-full" 
                     placeholder="ex: CD123456" 
                     type="text"
                     value={numeroPermis}
@@ -220,76 +222,72 @@ export default function InscriptionPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2 px-1">
                     <label className="text-[11px] font-bold text-on-surface-variant ml-4 uppercase tracking-tighter">Email (Optionnel)</label>
-                    <input 
+                    <Input 
                       type="email" 
                       placeholder="votre@email.com" 
                       value={formData.email} 
                       onChange={(e) => setFormData({...formData, email: e.target.value})} 
-                      className="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-12 px-6 text-on-surface font-medium transition-all shadow-inner" 
+                      className="w-full bg-surface-container border-none rounded-full h-12 px-6 text-on-surface font-medium transition-all shadow-inner" 
                     />
                   </div>
                   <div className="space-y-2 px-1">
                     <label className="text-[11px] font-bold text-on-surface-variant ml-4 uppercase tracking-tighter">Code PIN (Définitif)</label>
-                    <input 
+                    <Input 
                       type="password" 
                       required 
                       maxLength={6}
                       placeholder="••••" 
                       value={formData.pin} 
                       onChange={(e) => setFormData({...formData, pin: e.target.value.replace(/\D/g, '')})} 
-                      className="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-12 px-6 text-on-surface font-black text-lg tracking-[0.5em] transition-all shadow-inner" 
+                      className="w-full bg-surface-container border-none rounded-full h-12 px-6 text-on-surface font-black text-lg tracking-[0.5em] transition-all shadow-inner" 
                     />
                   </div>
                   <div className="space-y-2 px-1">
                     <label className="text-[11px] font-bold text-on-surface-variant ml-4 uppercase tracking-tighter">Province / Ville</label>
-                    <input 
+                    <Input 
                       type="text" 
                       required 
                       placeholder="Kinshasa" 
                       value={formData.ville} 
                       onChange={(e) => setFormData({...formData, ville: e.target.value})} 
-                      className="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-12 px-6 text-on-surface font-medium shadow-inner" 
+                      className="w-full bg-surface-container border-none rounded-full h-12 px-6 text-on-surface font-medium shadow-inner" 
                     />
                   </div>
                   <div className="space-y-2 px-1">
                     <label className="text-[11px] font-bold text-on-surface-variant ml-4 uppercase tracking-tighter">Commune</label>
-                    <input 
+                    <Input 
                       type="text" 
                       required 
                       placeholder="Gombe" 
                       value={formData.commune} 
                       onChange={(e) => setFormData({...formData, commune: e.target.value})} 
-                      className="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-12 px-6 text-on-surface font-medium shadow-inner" 
+                      className="w-full bg-surface-container border-none rounded-full h-12 px-6 text-on-surface font-medium shadow-inner" 
                     />
                   </div>
                   <div className="space-y-2 px-1 md:col-span-2">
                     <label className="text-[11px] font-bold text-on-surface-variant ml-4 uppercase tracking-tighter">Adresse complète</label>
-                    <input 
+                    <Input 
                       type="text" 
                       required 
                       placeholder="Avenue / Quartier / Numéro" 
                       value={formData.adresse} 
                       onChange={(e) => setFormData({...formData, adresse: e.target.value})} 
-                      className="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-12 px-6 text-on-surface font-medium shadow-inner" 
+                      className="w-full bg-surface-container border-none rounded-full h-12 px-6 text-on-surface font-medium shadow-inner" 
                     />
                   </div>
-                  <div className="space-y-2 px-1 md:col-span-2">
-                    <label className="text-[11px] font-bold text-on-surface-variant ml-4 uppercase tracking-tighter">École de formation</label>
-                    <div className="relative group">
-                      <select 
-                        required
-                        className="w-full bg-surface-container border-none focus:ring-2 focus:ring-secondary/20 rounded-full h-12 px-6 text-on-surface font-medium shadow-inner appearance-none transition-all pr-12"
-                        value={formData.ecoleFormation}
-                        onChange={(e) => setFormData({...formData, ecoleFormation: e.target.value})}
-                      >
-                        <option value="" disabled>Sélectionnez votre auto-école</option>
-                        <option value="Auto-école Makumbi">1. Auto-école Makumbi</option>
-                        <option value="CAMS Auto-école">2. CAMS Auto-école</option>
-                        <option value="Auto-école Excellence">3. Auto-école Excellence</option>
-                        <option value="Auto formation">Auto formation</option>
-                      </select>
-                      <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-outline/40">expand_more</span>
-                    </div>
+                  <div className="space-y-1 md:col-span-2">
+                    <CustomSelect
+                      label="École de formation"
+                      options={[
+                        { label: "Auto-école Makumbi", value: "Auto-école Makumbi" },
+                        { label: "CAMS Auto-école", value: "CAMS Auto-école" },
+                        { label: "Auto-école Excellence", value: "Auto-école Excellence" },
+                        { label: "Auto formation", value: "Auto formation" },
+                      ]}
+                      value={formData.ecoleFormation}
+                      onChange={(val) => setFormData({...formData, ecoleFormation: val})}
+                      placeholder="Sélectionnez votre auto-école"
+                    />
                   </div>
                 </div>
               </div>
@@ -365,7 +363,7 @@ export default function InscriptionPage() {
               <div className="pt-6">
                 <Link 
                   href="/login" 
-                  className="w-full h-16 bg-on-background text-white rounded-full font-headline font-black text-xl flex items-center justify-center gap-4 transition-all duration-300 shadow-2xl shadow-on-background/30 hover:scale-[1.02] active:scale-100 premium-button"
+                  className="w-full h-16 bg-[#1e3a8a] text-white rounded-full font-headline font-black text-xl flex items-center justify-center gap-4 transition-all duration-300 shadow-2xl shadow-blue-900/40 hover:scale-[1.02] active:scale-100 premium-button"
                 >
                   SE CONNECTER MAINTENANT
                   <span className="material-symbols-outlined !text-3xl">login</span>

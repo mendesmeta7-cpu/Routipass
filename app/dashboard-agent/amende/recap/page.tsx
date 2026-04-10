@@ -16,6 +16,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/Textarea";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function AmendeRecapPage() {
@@ -182,11 +183,11 @@ export default function AmendeRecapPage() {
         <div className="bg-white p-8 rounded-[3rem] shadow-lg border border-slate-100 space-y-6">
            <div className="space-y-3">
               <label className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Remarques (Optionnel)</label>
-              <textarea 
+              <Textarea 
                 value={remarques}
                 onChange={(e) => setRemarques(e.target.value)}
                 placeholder="Détails additionnels sur l'infraction..."
-                className="w-full h-32 p-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500/10 resize-none"
+                className="w-full h-32 rounded-2xl bg-slate-50/50 border-slate-100"
               />
            </div>
 

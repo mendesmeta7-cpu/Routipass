@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { supabase } from "@/lib/supabaseClient";
 
 interface FineType {
@@ -227,22 +228,15 @@ function AmendeFormContent() {
         <div className="bg-white p-8 rounded-[3rem] shadow-lg border border-slate-100 space-y-8">
            
            {/* Nature de l'infraction */}
-           <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] ml-1">Nature de l'infraction</label>
-              <div className="relative">
-                <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <select 
-                  value={selectedTypeId}
-                  onChange={(e) => handleTypeChange(e.target.value)}
-                  className="w-full h-14 pl-12 pr-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500/10 appearance-none"
-                >
-                  <option value="">Sélectionner une infraction...</option>
-                  {fineTypes.map(ft => (
-                    <option key={ft.id} value={ft.id}>{ft.nature}</option>
-                  ))}
-                </select>
-              </div>
-           </div>
+            <div className="space-y-1">
+               <CustomSelect
+                 label="Nature de l'infraction"
+                 options={fineTypes.map(ft => ({ label: ft.nature, value: ft.id }))}
+                 value={selectedTypeId}
+                 onChange={handleTypeChange}
+                 placeholder="Sélectionner une infraction..."
+               />
+            </div>
 
            {/* Montant et Délai (Auto) */}
            {currentType && (

@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { supabase } from "@/lib/supabaseClient";
 
 interface FineType {
@@ -247,16 +248,16 @@ export default function InfractionsManager() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Devise</label>
-                  <select 
+                <div className="space-y-1">
+                  <CustomSelect
+                    label="Devise"
+                    options={[
+                      { label: "CDF (Francs Congolais)", value: "CDF" },
+                      { label: "USD (Dollars US)", value: "USD" },
+                    ]}
                     value={devise}
-                    onChange={(e) => setDevise(e.target.value)}
-                    className="w-full h-14 px-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white text-sm font-bold outline-none"
-                  >
-                    <option value="CDF">CDF (Francs Congolais)</option>
-                    <option value="USD">USD (Dollars US)</option>
-                  </select>
+                    onChange={(val) => setDevise(val)}
+                  />
                 </div>
               </div>
 

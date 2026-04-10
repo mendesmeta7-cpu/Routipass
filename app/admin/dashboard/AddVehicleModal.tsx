@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { adminService } from "@/services/admin";
 import { Loader2, User, Car, Cog, Calendar, RefreshCcw, ShieldCheck, Zap, Info, MapPin, Phone, Hash, Fuel, Gauge, Weight, Activity, CreditCard } from "lucide-react";
 import { generateVIN, getUsageIllustration, generatePlate } from "@/utils/vehicleUtils";
@@ -301,51 +302,48 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Énergie</label>
-              <div className="relative">
-                <select 
-                  className="w-full h-12 pl-10 pr-4 bg-white border border-slate-100 rounded-xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 appearance-none"
-                  value={formData.energie}
-                  onChange={(e) => setFormData({...formData, energie: e.target.value})}
-                >
-                  <option value="Essence">Essence</option>
-                  <option value="Diesel">Diesel</option>
-                  <option value="Hybride">Hybride</option>
-                  <option value="Électrique">Élec</option>
-                </select>
-                <Fuel className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+            <div className="space-y-1">
+              <CustomSelect
+                label="Énergie"
+                options={[
+                  { label: "Essence", value: "Essence" },
+                  { label: "Diesel", value: "Diesel" },
+                  { label: "Hybride", value: "Hybride" },
+                  { label: "Électrique", value: "Électrique" },
+                ]}
+                value={formData.energie}
+                onChange={(val) => setFormData({...formData, energie: val})}
+              />
             </div>
             
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Puissance</label>
-              <div className="relative">
-                {!isManualPuissance ? (
-                  <select 
-                    className="w-full h-12 pl-10 pr-4 bg-white border border-slate-100 rounded-xl font-bold text-sm appearance-none focus:ring-2 focus:ring-emerald-500"
-                    value={formData.puissance}
-                    onChange={(e) => handlePuissanceChange(e.target.value)}
-                  >
-                    <option value="">Specs...</option>
-                    <option value="10-20 CV">10-20 CV</option>
-                    <option value="30-60 CV">30-60 CV</option>
-                    <option value="60-100 CV">60-100 CV</option>
-                    <option value="100-200 CV">100-200 CV</option>
-                    <option value="manual">+ Saisie</option>
-                  </select>
-                ) : (
+            <div className="space-y-1">
+              {!isManualPuissance ? (
+                <CustomSelect
+                  label="Puissance"
+                  options={[
+                    { label: "10-20 CV", value: "10-20 CV" },
+                    { label: "30-60 CV", value: "30-60 CV" },
+                    { label: "60-100 CV", value: "60-100 CV" },
+                    { label: "100-200 CV", value: "100-200 CV" },
+                    { label: "+ Saisie Manuelle", value: "manual" },
+                  ]}
+                  value={formData.puissance}
+                  onChange={handlePuissanceChange}
+                  placeholder="Specs..."
+                />
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Puissance (CV)</label>
                   <Input 
                     required 
                     autoFocus
-                    placeholder="CV" 
+                    placeholder="Ex: 500 CV" 
                     value={formData.puissance} 
                     onChange={(e) => setFormData({...formData, puissance: e.target.value})} 
-                    className="h-12 bg-white border-slate-100 rounded-xl font-bold pl-10"
+                    className="h-12 bg-white border-slate-100 rounded-xl font-bold"
                   />
-                )}
-                <Gauge className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -361,22 +359,18 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Cat. Usage</label>
-              <div className="relative">
-                <select 
-                  required
-                  className="w-full h-12 pl-10 pr-4 bg-white border border-slate-100 rounded-xl font-bold text-sm appearance-none focus:ring-2 focus:ring-emerald-500"
-                  value={formData.usage_categorie}
-                  onChange={(e) => handleUsageChange(e.target.value)}
-                >
-                  <option value="Privé">Privé</option>
-                  <option value="Public">Public</option>
-                  <option value="Commerciaux">Comm</option>
-                  <option value="Moto-taxi">Moto</option>
-                </select>
-                <ShieldCheck className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+            <div className="space-y-1">
+              <CustomSelect
+                label="Cat. Usage"
+                options={[
+                  { label: "Privé", value: "Privé" },
+                  { label: "Public", value: "Public" },
+                  { label: "Commerciaux", value: "Commerciaux" },
+                  { label: "Moto-taxi", value: "Moto-taxi" },
+                ]}
+                value={formData.usage_categorie}
+                onChange={handleUsageChange}
+              />
             </div>
           </div>
 
@@ -431,26 +425,28 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Montant Annuel Vignette</label>
-                <div className="flex gap-2">
-                  <Input 
-                    type="number"
-                    placeholder="Montant" 
-                    value={formData.montant_vignette} 
-                    onChange={(e) => setFormData({...formData, montant_vignette: parseFloat(e.target.value) || 0})} 
-                    className="h-12 bg-white border-slate-100 rounded-xl font-bold flex-1"
-                  />
-                  <select 
-                    className="w-24 h-12 bg-white border border-slate-100 rounded-xl font-bold text-sm focus:ring-2 focus:ring-amber-500 appearance-none px-4"
-                    value={formData.devise_vignette}
-                    onChange={(e) => setFormData({...formData, devise_vignette: e.target.value})}
-                  >
-                    <option value="CDF">CDF</option>
-                    <option value="USD">USD</option>
-                  </select>
-                </div>
-              </div>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1 space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Montant</label>
+                      <Input 
+                        type="number"
+                        placeholder="0.00" 
+                        value={formData.montant_vignette} 
+                        onChange={(e) => setFormData({...formData, montant_vignette: parseFloat(e.target.value) || 0})} 
+                        className="h-12 bg-white border-slate-100 rounded-xl font-bold"
+                      />
+                    </div>
+                    <div className="w-28">
+                      <CustomSelect
+                        options={[
+                          { label: "CDF", value: "CDF" },
+                          { label: "USD", value: "USD" },
+                        ]}
+                        value={formData.devise_vignette}
+                        onChange={(val) => setFormData({...formData, devise_vignette: val})}
+                      />
+                    </div>
+                  </div>
             </div>
 
             <div className="space-y-4">
@@ -478,7 +474,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
 
         <div className="flex gap-4 pt-4 sticky bottom-0 bg-white/80 backdrop-blur-xl py-4 z-10">
           <Button type="button" variant="ghost" onClick={onClose} className="flex-1 h-14 rounded-2xl text-slate-400 font-bold uppercase tracking-widest text-xs">Annuler</Button>
-          <Button type="submit" className="flex-1 h-14 rounded-2xl bg-[#0F172A] text-white font-black tracking-widest shadow-2xl shadow-slate-900/20" disabled={loading}>
+          <Button type="submit" className="flex-1 h-14 rounded-2xl bg-[#1e3a8a] text-white font-black tracking-widest shadow-2xl shadow-blue-900/20 hover:bg-[#152e6f] transition-all" disabled={loading}>
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "GÉNÉRER CARTE ROSE"}
           </Button>
         </div>
