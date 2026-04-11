@@ -63,6 +63,7 @@ export interface Amende {
   devise?: string;
   statut: 'IMPAYÉE' | 'PAYEE';
   conducteur_id: string;
+  vehicule_id?: string;
   agent_id?: string;
   date_emission?: string;
   date_creation: string;
