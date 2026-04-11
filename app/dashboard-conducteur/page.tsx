@@ -638,7 +638,7 @@ export default function DashboardConducteur() {
                 
                 {/* Vehicle Image */}
                 <div className="w-16 h-16 sm:w-24 sm:h-24 shrink-0 flex items-center justify-center p-1">
-                   <img src={getUsageIllustration(v.usage_categorie || 'Privé')} alt={v.marque} className="w-full h-full object-contain drop-shadow-sm" />
+                   <img src={getUsageIllustration(v.usage_categorie || 'Privé')} alt={v.marque} className="w-full h-full object-contain" />
                 </div>
 
                 {/* Vehicle Info */}

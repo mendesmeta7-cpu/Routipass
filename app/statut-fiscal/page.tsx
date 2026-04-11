@@ -390,10 +390,10 @@ function StatutFiscalContent() {
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${fine.statut === 'PAYEE' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
           {fine.statut === 'PAYEE' ? <CheckCircle2 className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
         </div>
-        <div className="flex-1">
-          <div className="flex justify-between items-start">
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start gap-2">
             <h4 className="font-black text-[#1e3b6a] text-sm truncate">{fine.nature_infraction}</h4>
-            <span className="font-black text-[#1e3b6a] text-sm">{fine.montant} {fine.devise}</span>
+            <span className="font-black text-[#1e3b6a] text-sm shrink-0 whitespace-nowrap">{fine.montant} {fine.devise}</span>
           </div>
           <div className="flex items-center gap-2 mt-1 mb-1">
             <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${fine.fine_types?.categorie_cible === 'Véhicule' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>

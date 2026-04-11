@@ -26,40 +26,42 @@ export function VehiclePreviewModal({ isOpen, onClose, vehicule, onConfirm, load
     <Dialog isOpen={isOpen} onClose={onClose} title="Détails du Véhicule">
       <div className="flex flex-col gap-6 max-h-[85vh] overflow-y-auto pr-2 custom-scrollbar">
         
-        {/* Header - Image & Plaque Card */}
-        <div className="relative pt-4">
-          <div className="bg-white rounded-3xl overflow-hidden h-48 sm:h-56 flex items-center justify-center p-0">
+        {/* Header - Image (Pas de superposition) */}
+        <div className="pt-2 animate-in fade-in duration-500">
+          <div className="h-44 sm:h-56 flex items-center justify-center shrink-0">
              <img 
                src={getUsageIllustration(vehicule.usage_categorie)} 
                alt={vehicule.usage_categorie} 
-               className="w-full h-full object-contain"
+               className="w-full h-full object-contain transition-transform hover:scale-105 duration-500"
              />
           </div>
-          
-          {/* Owner & Plate Overlay Card */}
-          <div className="absolute top-8 right-4 bg-white rounded-xl shadow-lg border border-slate-100 p-3 w-48 animate-in fade-in slide-in-from-right-4 duration-500">
-             <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] font-bold">🇨🇩</span>
-                  <span className="text-[10px] font-bold text-slate-400 border border-slate-200 px-1 rounded">CGO</span>
-                </div>
-                <span className="text-xs font-bold font-mono">{vehicule.plaque}</span>
-             </div>
-             
-             <div className="space-y-1">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Propriétaire</p>
-                <p className="text-sm font-bold text-slate-900 leading-tight">{vehicule.nom_proprietaire}</p>
-                <p className="text-[10px] text-slate-500">{vehicule.phone_proprietaire}</p>
-                <p className="text-[9px] text-slate-400 line-clamp-1">{vehicule.adresse_proprietaire}</p>
-             </div>
-          </div>
+        </div>
+        
+        {/* Nouvelle Carte d'Identité Propriétaire & Plaque */}
+        <div className="bg-slate-50 rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex items-center justify-between w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
+           <div className="flex flex-col">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 mt-1">Propriétaire</span>
+              <span className="text-base font-black text-[#1e3b6a] leading-none mb-1">{vehicule.nom_proprietaire}</span>
+              <span className="text-[11px] font-medium text-slate-500 leading-tight">{vehicule.phone_proprietaire}</span>
+              <span className="text-[10px] text-slate-400 line-clamp-1 truncate block max-w-[150px]">{vehicule.adresse_proprietaire}</span>
+           </div>
+           
+           <div className="flex flex-col items-end">
+              <div className="flex items-center gap-1.5 mb-2">
+                <span className="text-lg leading-none">🇨🇩</span>
+                <span className="text-[10px] font-black text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded shadow-sm bg-white uppercase tracking-widest">CGO</span>
+              </div>
+              <span className="text-[15px] font-black text-blue-700 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 tracking-wider shadow-inner">
+                {vehicule.plaque}
+              </span>
+           </div>
         </div>
 
         {/* Admin Data Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-            <Info className="w-4 h-4 text-blue-600" />
-            <h3 className="text-sm font-bold text-slate-800">Données administratives (Carte Rose)</h3>
+        <div className="space-y-4 bg-white rounded-[1.5rem] p-5 shadow-sm border border-slate-100 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-200 fill-mode-both">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Info className="w-5 h-5 text-blue-600" />
+            <h3 className="text-sm font-black text-[#1e3b6a] tracking-tight">Données administratives</h3>
           </div>
           
           <ul className="grid grid-cols-1 gap-1 text-sm text-slate-600 pl-2">
@@ -87,10 +89,10 @@ export function VehiclePreviewModal({ isOpen, onClose, vehicule, onConfirm, load
         </div>
 
         {/* Validity & Payment Section */}
-        <div className="space-y-4">
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
             <CreditCard className="w-4 h-4 text-amber-600" />
-            <h3 className="text-sm font-bold text-slate-800">État des redevances et validité</h3>
+            <h3 className="text-sm font-black text-[#1e3b6a] tracking-tight">État des redevances et validité</h3>
           </div>
 
           <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
