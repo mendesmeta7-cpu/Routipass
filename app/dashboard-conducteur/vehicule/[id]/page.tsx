@@ -72,7 +72,7 @@ export default function FicheVehiculePage() {
     try {
       setIsDeleting(true);
       await conducteurService.dissocierVehicule(currentUser.id, vehicule.id);
-      router.push('/dashboard-conducteur');
+      window.location.href = '/dashboard-conducteur';
     } catch (error) {
       console.error("Erreur lors de la dissociation:", error);
       alert("Une erreur est survenue lors de la suppression.");

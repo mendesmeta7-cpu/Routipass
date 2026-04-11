@@ -47,11 +47,20 @@ export const agentService = {
     const mainVehicule = vehicules && vehicules.length > 0 ? vehicules[0] : null;
 
     // 3. Fetch non-paid amendes
-    const { data: amendes } = await supabase
-      .from('amendes')
-      .select('*')
-      .eq('conducteur_id', driver.id)
-      .eq('statut', 'Non Payée');
+    const vehiculeIds = vehicules ? vehicules.map(v => v.id) : [];
+    let query = supabase
+      .from('fines_issued')
+      .select('*, fine_types(*), vehicules(*)')
+      .neq('statut', 'PAYEE')
+      .order('date_emission', { ascending: false });
+
+    if (vehiculeIds.length > 0) {
+      query = query.or(`conducteur_id.eq.${driver.id},and(vehicule_id.in.(${vehiculeIds.join(',')}),conducteur_id.is.null)`);
+    } else {
+      query = query.eq('conducteur_id', driver.id);
+    }
+    
+    const { data: amendes } = await query;
 
     // 4. Calculate Pastilles (from main vehicle dates)
     let assurancePastille: 'Vert' | 'Orange' | 'Rouge' = 'Rouge';

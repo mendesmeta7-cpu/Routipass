@@ -138,12 +138,21 @@ export const conducteurService = {
     return data;
   },
 
-  async getFinesIssued(conducteurId: string): Promise<any[]> {
-    const { data, error } = await supabase
+  async getFinesIssued(conducteurId: string, vehiculesIds?: string[]): Promise<any[]> {
+    let query = supabase
       .from('fines_issued')
       .select('*, fine_types(*), vehicules(*)')
-      .eq('conducteur_id', conducteurId)
       .order('date_emission', { ascending: false });
+
+    if (vehiculesIds && vehiculesIds.length > 0) {
+      // Amendes liées au conducteur OU (amendes liées aux véhicules ET cible = Véhicule)
+      // Note: conducteur_id est null pour les amendes véhicules dans la db, donc on peut simplement or(vehicule_id.in) sans risque
+      query = query.or(`conducteur_id.eq.${conducteurId},and(vehicule_id.in.(${vehiculesIds.join(',')}),conducteur_id.is.null)`);
+    } else {
+      query = query.eq('conducteur_id', conducteurId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data;

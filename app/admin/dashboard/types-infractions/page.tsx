@@ -25,6 +25,8 @@ interface FineType {
   montant: number;
   devise: string;
   delai_paiement: number;
+  categorie_cible: string;
+  gravite: string;
 }
 
 export default function InfractionsManager() {
@@ -39,6 +41,8 @@ export default function InfractionsManager() {
   const [montant, setMontant] = useState("");
   const [devise, setDevise] = useState("CDF");
   const [delai, setDelai] = useState("");
+  const [categorieCible, setCategorieCible] = useState("Conducteur");
+  const [gravite, setGravite] = useState("Moyenne");
   
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -64,12 +68,16 @@ export default function InfractionsManager() {
       setMontant(fineType.montant.toString());
       setDevise(fineType.devise);
       setDelai(fineType.delai_paiement.toString());
+      setCategorieCible(fineType.categorie_cible || "Conducteur");
+      setGravite(fineType.gravite || "Moyenne");
     } else {
       setEditingId(null);
       setNature("");
       setMontant("");
       setDevise("CDF");
       setDelai("");
+      setCategorieCible("Conducteur");
+      setGravite("Moyenne");
     }
     setIsModalOpen(true);
   };
@@ -82,7 +90,9 @@ export default function InfractionsManager() {
       nature,
       montant: parseInt(montant),
       devise,
-      delai_paiement: parseInt(delai)
+      delai_paiement: parseInt(delai),
+      categorie_cible: categorieCible,
+      gravite
     };
 
     let error;
@@ -162,7 +172,7 @@ export default function InfractionsManager() {
                 style={{ animationDelay: `${i * 50}ms` }}
               >
                 <div className="flex justify-between items-start mb-6">
-                  <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center shadow-sm group-hover:rotate-6 transition-transform">
+                  <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center shadow-sm group-hover:rotate-6 transition-transform relative">
                     <FileText className="w-6 h-6" />
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -183,7 +193,21 @@ export default function InfractionsManager() {
                 
                 <h3 className="text-lg font-black text-slate-900 mb-2">{type.nature}</h3>
                 
-                <div className="space-y-3 mt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${type.categorie_cible === 'Véhicule' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>
+                    {type.categorie_cible || 'Conducteur'}
+                  </span>
+                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${
+                    type.gravite === 'Faible' ? 'bg-yellow-50 text-yellow-700' :
+                    type.gravite === 'Moyenne' ? 'bg-orange-50 text-orange-700' :
+                    type.gravite === 'Grave' ? 'bg-red-50 text-red-700' :
+                    'bg-rose-900 text-rose-100'
+                  }`}>
+                    {type.gravite || 'Moyenne'}
+                  </span>
+                </div>
+                
+                <div className="space-y-3 mt-4">
                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
                     <span>Montant</span>
                     <span className="text-slate-900 text-sm">{type.montant.toLocaleString()} {type.devise}</span>
@@ -257,6 +281,33 @@ export default function InfractionsManager() {
                     ]}
                     value={devise}
                     onChange={(val) => setDevise(val)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <CustomSelect
+                    label="Catégorie Cible"
+                    options={[
+                      { label: "Conducteur", value: "Conducteur" },
+                      { label: "Véhicule", value: "Véhicule" },
+                    ]}
+                    value={categorieCible}
+                    onChange={(val) => setCategorieCible(val)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <CustomSelect
+                    label="Gravité"
+                    options={[
+                      { label: "Faible", value: "Faible" },
+                      { label: "Moyenne", value: "Moyenne" },
+                      { label: "Grave", value: "Grave" },
+                      { label: "Très grave", value: "Très grave" },
+                    ]}
+                    value={gravite}
+                    onChange={(val) => setGravite(val)}
                   />
                 </div>
               </div>

@@ -37,10 +37,9 @@ function StatutFiscalContent() {
 
         const profile = await conducteurService.getProfileById(user.id);
         if (profile) {
-          const [vehiculesData, finesData] = await Promise.all([
-            conducteurService.getVehicules(profile.id),
-            conducteurService.getFinesIssued(profile.id)
-          ]);
+          const vehiculesData = await conducteurService.getVehicules(profile.id);
+          const vehiculeIds = vehiculesData.map(v => v.id);
+          const finesData = await conducteurService.getFinesIssued(profile.id, vehiculeIds);
           setVehicules(vehiculesData);
           setFines(finesData);
         } else {
@@ -396,6 +395,19 @@ function StatutFiscalContent() {
             <h4 className="font-black text-[#1e3b6a] text-sm truncate">{fine.nature_infraction}</h4>
             <span className="font-black text-[#1e3b6a] text-sm">{fine.montant} {fine.devise}</span>
           </div>
+          <div className="flex items-center gap-2 mt-1 mb-1">
+            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${fine.fine_types?.categorie_cible === 'Véhicule' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>
+              {fine.fine_types?.categorie_cible || 'Conducteur'}
+            </span>
+            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+              (!fine.fine_types?.gravite || fine.fine_types?.gravite === 'Moyenne') ? 'bg-orange-50 text-orange-700' :
+              fine.fine_types?.gravite === 'Faible' ? 'bg-yellow-50 text-yellow-700' :
+              fine.fine_types?.gravite === 'Grave' ? 'bg-red-50 text-red-700' :
+              'bg-rose-900 text-rose-100'
+            }`}>
+              {fine.fine_types?.gravite || 'Moyenne'}
+            </span>
+          </div>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[10px] font-bold text-gray-400">{new Date(fine.date_emission).toLocaleDateString()}</span>
             <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
@@ -459,8 +471,21 @@ function StatutFiscalContent() {
             </div>
             <div>
               <h2 className="text-xl font-black text-[#1e3b6a] leading-tight">{selectedFine.nature_infraction}</h2>
+              <div className="flex items-center gap-2 mt-2 mb-1">
+                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${selectedFine.fine_types?.categorie_cible === 'Véhicule' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>
+                  Cible: {selectedFine.fine_types?.categorie_cible || 'Conducteur'}
+                </span>
+                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                  (!selectedFine.fine_types?.gravite || selectedFine.fine_types?.gravite === 'Moyenne') ? 'bg-orange-50 text-orange-700' :
+                  selectedFine.fine_types?.gravite === 'Faible' ? 'bg-yellow-50 text-yellow-700' :
+                  selectedFine.fine_types?.gravite === 'Grave' ? 'bg-red-50 text-red-700' :
+                  'bg-rose-900 text-rose-100'
+                }`}>
+                  Gravité: {selectedFine.fine_types?.gravite || 'Moyenne'}
+                </span>
+              </div>
               <div className="flex items-center gap-2 mt-1">
-                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${selectedFine.statut === 'PAYEE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${selectedFine.statut === 'PAYEE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                   {selectedFine.statut}
                 </span>
                 <span className="text-[10px] font-bold text-gray-400">Réf: {selectedFine.id.slice(0, 8).toUpperCase()}</span>

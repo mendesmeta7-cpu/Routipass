@@ -41,7 +41,7 @@ export default function ScanVerificationPage() {
           const linked = await conducteurService.isVehiculeLinked(fetchedDriver.id, fetchedVehicule.id);
           setIsLinked(linked);
 
-          const fines = await conducteurService.getFinesIssued(fetchedDriver.id);
+          const fines = await conducteurService.getFinesIssued(fetchedDriver.id, [fetchedVehicule.id]);
           setUnpaidFines(fines.filter((f: any) => f.statut === 'IMPAYÉE'));
         } else {
           setIsLinked(false);

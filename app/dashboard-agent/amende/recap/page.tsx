@@ -151,10 +151,12 @@ export default function AmendeRecapPage() {
            </div>
 
            <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-6">
-              <div className="space-y-1">
-                 <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Conducteur</p>
-                 <p className="text-sm font-bold text-slate-900 truncate">{data.conducteur_nom}</p>
-              </div>
+              {data.categorie_cible !== 'Véhicule' && (
+                <div className="space-y-1">
+                   <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Conducteur</p>
+                   <p className="text-sm font-bold text-slate-900 truncate">{data.conducteur_nom}</p>
+                </div>
+              )}
               <div className="space-y-1">
                  <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Véhicule</p>
                  <p className="text-sm font-bold text-slate-900">{data.vehicule_plaque}</p>

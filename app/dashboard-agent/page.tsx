@@ -264,8 +264,30 @@ export default function DashboardAgent() {
                           ? `${scannedDriver.amendes.length} amende(s) impayée(s)`
                           : "Aucune amende en attente"}
                       </p>
+                      {scannedDriver.amendes.length > 0 && (
+                        <div className="flex flex-col gap-3 mt-4">
+                           {scannedDriver.amendes.map((amende: any) => (
+                             <div key={amende.id} className="bg-white p-3.5 rounded-2xl border border-rose-100 flex flex-col shadow-sm gap-2 transition-all hover:border-rose-200">
+                               <div className="flex justify-between items-start gap-3">
+                                  <span className="font-black text-xs text-slate-800 leading-tight uppercase tracking-tight">
+                                     {amende.fine_types?.name || amende.nature_infraction || amende.motif || 'Infraction'}
+                                  </span>
+                                  <span className="font-black text-rose-600 shrink-0 text-sm">{amende.montant} {amende.devise || 'CDF'}</span>
+                               </div>
+                               <div className="flex items-center gap-2">
+                                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${amende.fine_types?.categorie_cible === 'Véhicule' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>
+                                     Cible: {amende.fine_types?.categorie_cible || 'Conducteur'}
+                                  </span>
+                                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${(!amende.fine_types?.gravite || amende.fine_types?.gravite === 'Moyenne') ? 'bg-orange-50 text-orange-700' : amende.fine_types?.gravite === 'Faible' ? 'bg-yellow-50 text-yellow-700' : amende.fine_types?.gravite === 'Grave' ? 'bg-red-50 text-red-700' : 'bg-rose-900 text-rose-100'}`}>
+                                     {amende.fine_types?.gravite || 'Moyenne'}
+                                  </span>
+                               </div>
+                             </div>
+                           ))}
+                        </div>
+                      )}
                     </div>
-                    <Button onClick={() => setShowAmendeForm(true)} className="h-12 w-full rounded-xl bg-rose-600 text-white font-black tracking-widest shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all text-xs">
+                    <Button onClick={() => setShowAmendeForm(true)} className="h-12 w-full rounded-xl bg-rose-600 text-white font-black tracking-widest shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all text-xs mt-2">
                       DRESSER UNE AMENDE
                     </Button>
                   </div>

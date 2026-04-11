@@ -27,6 +27,8 @@ interface FineType {
   montant: number;
   devise: string;
   delai_paiement: number;
+  categorie_cible?: string;
+  gravite?: string;
 }
 
 function AmendeFormContent() {
@@ -42,11 +44,15 @@ function AmendeFormContent() {
   const [fineTypes, setFineTypes] = useState<FineType[]>([]);
   
   // Form State
+  const [cibleSelection, setCibleSelection] = useState<"Conducteur" | "Véhicule">("Conducteur");
   const [selectedTypeId, setSelectedTypeId] = useState("");
   const [lieu, setLieu] = useState("");
   const [isLocating, setIsLocating] = useState(false);
   
   const [currentType, setCurrentType] = useState<FineType | null>(null);
+
+  // Filter types based on selection
+  const filteredTypes = fineTypes.filter(ft => (ft.categorie_cible || "Conducteur") === cibleSelection);
 
   useEffect(() => {
     const initData = async () => {
@@ -114,6 +120,12 @@ function AmendeFormContent() {
     setCurrentType(type || null);
   };
 
+  const handleCibleChange = (cible: "Conducteur" | "Véhicule") => {
+    setCibleSelection(cible);
+    setSelectedTypeId("");
+    setCurrentType(null);
+  };
+
   const captureLocation = () => {
     setIsLocating(true);
     if ("geolocation" in navigator) {
@@ -144,8 +156,8 @@ function AmendeFormContent() {
       agent_id: agent?.id,
       agent_nom: agent?.nom ? `${agent.nom} ${agent.postnom || ''}`.trim() : 'Officier PNC',
       agent_matricule: agent?.matricule || agent?.agent_id || agent?.agentId || 'ID-ACTIVE',
-      conducteur_id: driver?.id,
-      conducteur_nom: driver?.permis ? `${driver.permis.nom} ${driver.permis.prenom}` : "Conducteur Inconnu",
+      conducteur_id: cibleSelection === 'Véhicule' ? null : driver?.id,
+      conducteur_nom: cibleSelection === 'Véhicule' ? null : (driver?.permis ? `${driver.permis.nom} ${driver.permis.prenom}` : "Conducteur Inconnu"),
       vehicule_id: vehicule?.id,
       vehicule_plaque: vehicule?.plaque,
       type_id: currentType?.id,
@@ -153,6 +165,8 @@ function AmendeFormContent() {
       montant: currentType?.montant,
       devise: currentType?.devise,
       delai_paiement: currentType?.delai_paiement,
+      categorie_cible: cibleSelection,
+      gravite: currentType?.gravite || 'Moyenne',
       lieu_gps: lieu,
       date_emission: new Date().toISOString()
     };
@@ -206,17 +220,29 @@ function AmendeFormContent() {
         </div>
 
         {/* Cible du Scan */}
-        <div className="bg-[#1e3b6a] text-white p-6 rounded-[2.5rem] shadow-xl relative overflow-hidden">
+        <div className="bg-[#1e3b6a] text-white p-6 rounded-[2.5rem] shadow-xl relative overflow-hidden transition-all duration-300">
            <div className="flex items-center gap-4 relative z-10">
               <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center">
-                 <User className="w-6 h-6 text-white" />
+                 {cibleSelection === 'Véhicule' ? <Car className="w-6 h-6 text-white" /> : <User className="w-6 h-6 text-white" />}
               </div>
               <div>
-                 <h2 className="text-lg font-black tracking-tight">{driver?.permis?.nom} {driver?.permis?.prenom}</h2>
-                 <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 mt-1">
-                   <Car className="w-3.5 h-3.5" />
-                   {vehicule?.plaque} • {vehicule?.marque}
-                 </p>
+                 {cibleSelection === 'Véhicule' ? (
+                   <>
+                     <h2 className="text-lg font-black tracking-tight uppercase">{vehicule?.plaque}</h2>
+                     <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 mt-1">
+                       <Car className="w-3.5 h-3.5" />
+                       {vehicule?.marque} • {vehicule?.modele}
+                     </p>
+                   </>
+                 ) : (
+                   <>
+                     <h2 className="text-lg font-black tracking-tight">{driver?.permis?.nom} {driver?.permis?.prenom}</h2>
+                     <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 mt-1">
+                       <Car className="w-3.5 h-3.5" />
+                       {vehicule?.plaque} • {vehicule?.marque}
+                     </p>
+                   </>
+                 )}
               </div>
            </div>
            <div className="absolute right-[-10px] bottom-[-10px] opacity-10 rotate-12">
@@ -224,14 +250,34 @@ function AmendeFormContent() {
            </div>
         </div>
 
+        {/* Toggle Conducteur / Véhicule */}
+        <div className="bg-white p-2 rounded-[2rem] shadow-sm border border-slate-100 flex relative">
+          <button
+            onClick={() => handleCibleChange('Conducteur')}
+            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest rounded-[1.5rem] transition-all relative z-10 ${cibleSelection === 'Conducteur' ? 'text-white' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            Conducteur
+          </button>
+          <button
+            onClick={() => handleCibleChange('Véhicule')}
+            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest rounded-[1.5rem] transition-all relative z-10 ${cibleSelection === 'Véhicule' ? 'text-white' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            Véhicule
+          </button>
+          <div
+            className="absolute top-2 bottom-2 w-[calc(50%-8px)] bg-blue-600 rounded-[1.5rem] transition-all duration-300 shadow-md shadow-blue-500/20"
+            style={{ left: cibleSelection === 'Conducteur' ? '8px' : 'calc(50%)' }}
+          ></div>
+        </div>
+
         {/* Formulaire de saisie */}
-        <div className="bg-white p-8 rounded-[3rem] shadow-lg border border-slate-100 space-y-8">
+        <div className="bg-white p-8 rounded-[3rem] shadow-lg border border-slate-100 space-y-8 mt-2">
            
            {/* Nature de l'infraction */}
             <div className="space-y-1">
                <CustomSelect
                  label="Nature de l'infraction"
-                 options={fineTypes.map(ft => ({ label: ft.nature, value: ft.id }))}
+                 options={filteredTypes.map(ft => ({ label: ft.nature, value: ft.id }))}
                  value={selectedTypeId}
                  onChange={handleTypeChange}
                  placeholder="Sélectionner une infraction..."

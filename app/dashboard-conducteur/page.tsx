@@ -54,11 +54,13 @@ export default function DashboardConducteur() {
   const [recentUnpaidFines, setRecentUnpaidFines] = useState<Amende[]>([]);
   const [showNewFineToast, setShowNewFineToast] = useState(false);
 
+  const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
+
   useEffect(() => {
     if (alertsArray.length > 1) {
       const interval = setInterval(() => {
         setCurrentAlertIndex((prev) => (prev + 1) % alertsArray.length);
-      }, 3500);
+      }, 4000);
       return () => clearInterval(interval);
     }
   }, [alertsArray]);
@@ -113,6 +115,9 @@ export default function DashboardConducteur() {
         // Evaluate simple business rules for Account Status
         evaluateAccountHealth(userAmendes, vehiclesWithPhotos);
 
+        // Setup real-time
+        setupRealtime(profile.id, vehiclesWithPhotos);
+
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       } finally {
@@ -122,54 +127,44 @@ export default function DashboardConducteur() {
 
     loadData();
 
-    // Listen for real-time fines
-    const setupRealtime = async () => {
-      const user = await authService.getCurrentUser();
-      if (!user) return;
-
-      const profile = await conducteurService.getProfileById(user.id);
-      if (!profile) return;
-
-      const channel = supabase
-        .channel('schema-db-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'fines_issued',
-            filter: `conducteur_id=eq.${profile.id}`
-          },
-          (payload) => {
-            console.log("🔔 Nouvelle amende détectée en temps réel !", payload);
-            handleNewFine(payload.new as Amende);
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'fines_issued',
-            filter: `conducteur_id=eq.${profile.id}`
-          },
-          (payload) => {
-            console.log("📝 Mise à jour d'amende détectée :", payload);
-            handleUpdateFine(payload.new as Amende);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    };
-
-    const cleanup = setupRealtime();
     return () => {
-      cleanup.then(fn => fn && fn());
+       if (realtimeChannel) {
+          supabase.removeChannel(realtimeChannel);
+       }
     };
   }, [router]);
+
+  const setupRealtime = (profileId: string, vehicles: VehiculeWithPhotos[]) => {
+    if (realtimeChannel) {
+      supabase.removeChannel(realtimeChannel);
+    }
+
+    let channel = supabase.channel(`fines-${profileId}-${Date.now()}`);
+
+    // Driver fines
+    channel = channel
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fines_issued', filter: `conducteur_id=eq.${profileId}` }, payload => {
+        console.log("🔔 Nouvelle amende conducteur détectée !", payload);
+        handleNewFine(payload.new as Amende);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'fines_issued', filter: `conducteur_id=eq.${profileId}` }, payload => {
+        handleUpdateFine(payload.new as Amende);
+      });
+
+    // Vehicle fines
+    vehicles.forEach(v => {
+      channel = channel
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fines_issued', filter: `vehicule_id=eq.${v.id}` }, payload => {
+           if (!payload.new.conducteur_id) handleNewFine(payload.new as Amende);
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'fines_issued', filter: `vehicule_id=eq.${v.id}` }, payload => {
+           if (!payload.new.conducteur_id) handleUpdateFine(payload.new as Amende);
+        });
+    });
+
+    channel.subscribe();
+    setRealtimeChannel(channel);
+  };
 
   const handleNewFine = (fine: Amende) => {
     setUnreadCount(prev => prev + 1);
@@ -235,9 +230,24 @@ export default function DashboardConducteur() {
     const unpaidAmendes = amendesList.filter(a => a.statut !== 'PAYEE');
     const alerts: string[] = [];
 
-    if (unpaidAmendes.length > 0) {
-      alerts.push(`${unpaidAmendes.length} amende(s) impayée(s)`);
+    const unpaidDriver = unpaidAmendes.filter(a => a.conducteur_id);
+    const unpaidVehicle = unpaidAmendes.filter(a => !a.conducteur_id);
+
+    if (unpaidDriver.length > 0) {
+      alerts.push(`${unpaidDriver.length} amende(s) impayée(s) (Conducteur)`);
     }
+
+    const groupedVehicles: Record<string, number> = {};
+    unpaidVehicle.forEach(a => {
+       const v = vehiculesList.find(veh => veh.id === a.vehicule_id);
+       if (v) {
+          groupedVehicles[v.plaque] = (groupedVehicles[v.plaque] || 0) + 1;
+       }
+    });
+
+    Object.entries(groupedVehicles).forEach(([plaque, count]) => {
+       alerts.push(`${count} amende(s) impayée(s) (Véhicule ${plaque})`);
+    });
 
     const today = new Date();
 
@@ -300,7 +310,17 @@ export default function DashboardConducteur() {
       const vphotos: VehiculeWithPhotos = { ...vehiculeRecherche, photosAssociees: [] };
       const newVehiclesList = [...vehicules, vphotos];
       setVehicules(newVehiclesList);
-      evaluateAccountHealth(amendes, newVehiclesList);
+
+      // Fetch dynamic fines including the new vehicle
+      const newFines = await conducteurService.getFinesIssued(conducteur.id, newVehiclesList.map(v => v.id));
+      setAmendes(newFines);
+      
+      const unpaid = newFines.filter(a => a.statut !== 'PAYEE');
+      setUnreadCount(unpaid.length);
+      setRecentUnpaidFines(unpaid.slice(0, 5));
+
+      evaluateAccountHealth(newFines, newVehiclesList);
+      setupRealtime(conducteur.id, newVehiclesList);
 
       setVehiculeRecherche(null);
       setShowPreview(false);
