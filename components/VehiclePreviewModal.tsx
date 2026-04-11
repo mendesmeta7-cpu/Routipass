@@ -38,20 +38,20 @@ export function VehiclePreviewModal({ isOpen, onClose, vehicule, onConfirm, load
         </div>
         
         {/* Nouvelle Carte d'Identité Propriétaire & Plaque */}
-        <div className="bg-slate-50 rounded-[1.5rem] p-5 shadow-sm border border-slate-100 flex items-center justify-between w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
-           <div className="flex flex-col">
+        <div className="bg-slate-50 rounded-[1.5rem] p-4 sm:p-5 shadow-sm border border-slate-100 flex items-center justify-between gap-3 w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
+           <div className="flex flex-col flex-1 min-w-0">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 mt-1">Propriétaire</span>
-              <span className="text-base font-black text-[#1e3b6a] leading-none mb-1">{vehicule.nom_proprietaire}</span>
-              <span className="text-[11px] font-medium text-slate-500 leading-tight">{vehicule.phone_proprietaire}</span>
-              <span className="text-[10px] text-slate-400 line-clamp-1 truncate block max-w-[150px]">{vehicule.adresse_proprietaire}</span>
+              <span className="text-base font-black text-[#1e3b6a] leading-tight mb-1 truncate w-full block">{vehicule.nom_proprietaire}</span>
+              <span className="text-[11px] font-medium text-slate-500 leading-tight truncate w-full block">{vehicule.phone_proprietaire}</span>
+              <span className="text-[10px] text-slate-400 line-clamp-1 truncate block w-full">{vehicule.adresse_proprietaire}</span>
            </div>
            
-           <div className="flex flex-col items-end">
+           <div className="flex flex-col items-end shrink-0">
               <div className="flex items-center gap-1.5 mb-2">
                 <span className="text-lg leading-none">🇨🇩</span>
                 <span className="text-[10px] font-black text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded shadow-sm bg-white uppercase tracking-widest">CGO</span>
               </div>
-              <span className="text-[15px] font-black text-blue-700 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 tracking-wider shadow-inner">
+              <span className="text-sm sm:text-[15px] font-black text-blue-700 bg-blue-50 px-2 sm:px-3 py-1.5 rounded-xl border border-blue-100 tracking-wider shadow-inner">
                 {vehicule.plaque}
               </span>
            </div>

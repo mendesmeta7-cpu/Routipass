@@ -54,13 +54,11 @@ export default function DashboardConducteur() {
   const [recentUnpaidFines, setRecentUnpaidFines] = useState<Amende[]>([]);
   const [showNewFineToast, setShowNewFineToast] = useState(false);
 
-  const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
-
   useEffect(() => {
     if (alertsArray.length > 1) {
       const interval = setInterval(() => {
         setCurrentAlertIndex((prev) => (prev + 1) % alertsArray.length);
-      }, 4000);
+      }, 3500);
       return () => clearInterval(interval);
     }
   }, [alertsArray]);
@@ -115,9 +113,6 @@ export default function DashboardConducteur() {
         // Evaluate simple business rules for Account Status
         evaluateAccountHealth(userAmendes, vehiclesWithPhotos);
 
-        // Setup real-time
-        setupRealtime(profile.id, vehiclesWithPhotos);
-
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       } finally {
@@ -127,44 +122,54 @@ export default function DashboardConducteur() {
 
     loadData();
 
+    // Listen for real-time fines
+    const setupRealtime = async () => {
+      const user = await authService.getCurrentUser();
+      if (!user) return;
+
+      const profile = await conducteurService.getProfileById(user.id);
+      if (!profile) return;
+
+      const channel = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'fines_issued',
+            filter: `conducteur_id=eq.${profile.id}`
+          },
+          (payload) => {
+            console.log("🔔 Nouvelle amende détectée en temps réel !", payload);
+            handleNewFine(payload.new as Amende);
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'fines_issued',
+            filter: `conducteur_id=eq.${profile.id}`
+          },
+          (payload) => {
+            console.log("📝 Mise à jour d'amende détectée :", payload);
+            handleUpdateFine(payload.new as Amende);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+
+    const cleanup = setupRealtime();
     return () => {
-       if (realtimeChannel) {
-          supabase.removeChannel(realtimeChannel);
-       }
+      cleanup.then(fn => fn && fn());
     };
   }, [router]);
-
-  const setupRealtime = (profileId: string, vehicles: VehiculeWithPhotos[]) => {
-    if (realtimeChannel) {
-      supabase.removeChannel(realtimeChannel);
-    }
-
-    let channel = supabase.channel(`fines-${profileId}-${Date.now()}`);
-
-    // Driver fines
-    channel = channel
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fines_issued', filter: `conducteur_id=eq.${profileId}` }, payload => {
-        console.log("🔔 Nouvelle amende conducteur détectée !", payload);
-        handleNewFine(payload.new as Amende);
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'fines_issued', filter: `conducteur_id=eq.${profileId}` }, payload => {
-        handleUpdateFine(payload.new as Amende);
-      });
-
-    // Vehicle fines
-    vehicles.forEach(v => {
-      channel = channel
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fines_issued', filter: `vehicule_id=eq.${v.id}` }, payload => {
-           if (!payload.new.conducteur_id) handleNewFine(payload.new as Amende);
-        })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'fines_issued', filter: `vehicule_id=eq.${v.id}` }, payload => {
-           if (!payload.new.conducteur_id) handleUpdateFine(payload.new as Amende);
-        });
-    });
-
-    channel.subscribe();
-    setRealtimeChannel(channel);
-  };
 
   const handleNewFine = (fine: Amende) => {
     setUnreadCount(prev => prev + 1);
@@ -184,7 +189,7 @@ export default function DashboardConducteur() {
     if (fine.statut === 'PAYEE') {
       setRecentUnpaidFines(prev => prev.filter(f => f.id !== fine.id));
       setUnreadCount(prev => Math.max(0, prev - 1));
-      
+
       // Si le toast affichait cette amende, on le cache
       if (recentUnpaidFines[0]?.id === fine.id) {
         setShowNewFineToast(false);
@@ -211,9 +216,9 @@ export default function DashboardConducteur() {
     if (!conducteur) return;
     setUpdatingContact(true);
     try {
-      await conducteurService.updateProfile(conducteur.id, { 
-        email: newEmail, 
-        telephone: newPhone 
+      await conducteurService.updateProfile(conducteur.id, {
+        email: newEmail,
+        telephone: newPhone
       });
       setConducteur({ ...conducteur, email: newEmail, telephone: newPhone });
       setShowContactModal(false);
@@ -230,24 +235,9 @@ export default function DashboardConducteur() {
     const unpaidAmendes = amendesList.filter(a => a.statut !== 'PAYEE');
     const alerts: string[] = [];
 
-    const unpaidDriver = unpaidAmendes.filter(a => a.conducteur_id);
-    const unpaidVehicle = unpaidAmendes.filter(a => !a.conducteur_id);
-
-    if (unpaidDriver.length > 0) {
-      alerts.push(`${unpaidDriver.length} amende(s) impayée(s) (Conducteur)`);
+    if (unpaidAmendes.length > 0) {
+      alerts.push(`${unpaidAmendes.length} amende(s) impayée(s)`);
     }
-
-    const groupedVehicles: Record<string, number> = {};
-    unpaidVehicle.forEach(a => {
-       const v = vehiculesList.find(veh => veh.id === a.vehicule_id);
-       if (v) {
-          groupedVehicles[v.plaque] = (groupedVehicles[v.plaque] || 0) + 1;
-       }
-    });
-
-    Object.entries(groupedVehicles).forEach(([plaque, count]) => {
-       alerts.push(`${count} amende(s) impayée(s) (Véhicule ${plaque})`);
-    });
 
     const today = new Date();
 
@@ -310,17 +300,7 @@ export default function DashboardConducteur() {
       const vphotos: VehiculeWithPhotos = { ...vehiculeRecherche, photosAssociees: [] };
       const newVehiclesList = [...vehicules, vphotos];
       setVehicules(newVehiclesList);
-
-      // Fetch dynamic fines including the new vehicle
-      const newFines = await conducteurService.getFinesIssued(conducteur.id, newVehiclesList.map(v => v.id));
-      setAmendes(newFines);
-      
-      const unpaid = newFines.filter(a => a.statut !== 'PAYEE');
-      setUnreadCount(unpaid.length);
-      setRecentUnpaidFines(unpaid.slice(0, 5));
-
-      evaluateAccountHealth(newFines, newVehiclesList);
-      setupRealtime(conducteur.id, newVehiclesList);
+      evaluateAccountHealth(amendes, newVehiclesList);
 
       setVehiculeRecherche(null);
       setShowPreview(false);
@@ -400,13 +380,13 @@ export default function DashboardConducteur() {
 
       {/* Main Responsive Frame - Full Width Fill Screen */}
       <main className="w-full bg-white flex flex-col min-h-screen animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
-        
+
         {/* TOP SECTION */}
         <div className="flex-none flex flex-col">
-          
+
           {/* Yellow Header Section */}
           <section className="bg-[#e9b11e] rounded-b-[2rem] pt-12 pb-24 px-6 md:px-12 lg:px-24 relative shrink-0">
-            
+
             {/* Logout Button (top left) */}
             <button
               onClick={() => setShowLogoutConfirm(true)}
@@ -419,7 +399,7 @@ export default function DashboardConducteur() {
 
             {/* Notifications Icon (top right) */}
             <div className="absolute top-10 right-6 z-40">
-              <button 
+              <button
                 onClick={() => {
                   setShowNotifications(!showNotifications);
                   if (!showNotifications) {
@@ -428,12 +408,12 @@ export default function DashboardConducteur() {
                 }}
                 className={`relative bg-white/20 p-2 rounded-full outline-none transition-all hover:scale-105 active:scale-95 ${isBellWiggling ? 'bell-wiggle shadow-[0_0_15px_rgba(233,177,30,0.5)]' : ''}`}
               >
-                <Bell 
-                  key={isBellWiggling ? 'wiggling' : 'idle'} 
-                  className="w-5 h-5 text-black" 
-                  strokeWidth={2} 
+                <Bell
+                  key={isBellWiggling ? 'wiggling' : 'idle'}
+                  className="w-5 h-5 text-black"
+                  strokeWidth={2}
                 />
-                
+
                 {unreadCount > 0 && (
                   <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-[#e9b11e] flex items-center justify-center">
                     <span className="text-[10px] font-bold text-white leading-none">{unreadCount}</span>
@@ -443,7 +423,7 @@ export default function DashboardConducteur() {
 
               {/* Floating Toast Notification */}
               {showNewFineToast && recentUnpaidFines.length > 0 && (
-                <div 
+                <div
                   onClick={() => router.push(`/statut-fiscal?tab=AMENDES&fineId=${recentUnpaidFines[0].id}&paymentFlow=true`)}
                   className="absolute top-0 right-14 whitespace-nowrap bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-yellow-200 rounded-xl px-4 py-2.5 flex items-center gap-3 cursor-pointer toast-entrance hover:bg-gray-50 transition-all z-[100] min-w-[200px]"
                 >
@@ -474,7 +454,7 @@ export default function DashboardConducteur() {
                               <span className="text-[10px] font-black text-gray-900 truncate pr-2">{fine.nature_infraction || fine.motif}</span>
                               <span className="text-[10px] font-bold text-[#1e3b6a]">{fine.montant.toLocaleString()} {fine.devise}</span>
                             </div>
-                            <button 
+                            <button
                               onClick={() => router.push(`/statut-fiscal?tab=AMENDES&fineId=${fine.id}&paymentFlow=true`)}
                               className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:underline text-left mt-1"
                             >
@@ -483,8 +463,8 @@ export default function DashboardConducteur() {
                           </div>
                         ))}
                       </div>
-                      <Link 
-                        href="/statut-fiscal?tab=AMENDES" 
+                      <Link
+                        href="/statut-fiscal?tab=AMENDES"
                         className="block w-full py-2 bg-[#1e3b6a] text-white text-center rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-[#152e6f] transition-colors mt-2"
                       >
                         Voir tout le statut fiscal
@@ -503,13 +483,13 @@ export default function DashboardConducteur() {
             <div className="flex gap-4 items-start pr-8">
               {/* Photo Cadre */}
               <div className="w-20 h-20 rounded-full bg-white border-[3px] border-white shadow-xl overflow-hidden shrink-0 mt-1 object-cover">
-                 {conducteur.photo ? (
-                   <img src={conducteur.photo} alt="Profile" className="w-full h-full object-cover" />
-                 ) : (
-                   <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <AlertCircle className="text-gray-400 w-6 h-6" />
-                   </div>
-                 )}
+                {conducteur.photo ? (
+                  <img src={conducteur.photo} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <AlertCircle className="text-gray-400 w-6 h-6" />
+                  </div>
+                )}
               </div>
 
               {/* Main Info */}
@@ -520,18 +500,18 @@ export default function DashboardConducteur() {
                 <p className="text-xs font-bold text-black/80">
                   Permis : {conducteur.numero_permis}
                 </p>
-                
+
               </div>
             </div>
 
             <div className="mt-4 flex justify-end gap-3 px-2">
-              <button 
-                 onClick={() => setShowQR(!showQR)}
-                 className="bg-white p-3 rounded-2xl shadow-sm hover:scale-105 transition-transform flex items-center justify-center"
+              <button
+                disabled={true}
+                className="bg-white p-3 rounded-2xl shadow-sm flex items-center justify-center opacity-50 cursor-not-allowed"
               >
                 <ScanLine className="w-5 h-5 text-black" />
               </button>
-              <button 
+              <button
                 onClick={openContactModal}
                 className="bg-white px-6 py-2 rounded-2xl shadow-sm hover:bg-gray-50 font-black text-xs tracking-widest uppercase text-black transition-all"
               >
@@ -543,154 +523,154 @@ export default function DashboardConducteur() {
           {/* Floating General Info Card */}
           <div className="px-5 md:px-12 lg:px-24 -mt-20 relative z-10 w-full shrink-0">
             <h2 className="text-[14px] font-black text-[#1e3b6a] mb-2 px-1 tracking-tight">Infos générales</h2>
-            
+
             <div className="bg-white rounded-3xl p-5 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] border border-gray-100 flex flex-col gap-2 relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-20 h-20 bg-gray-50 rounded-bl-full -z-10"></div>
-               <button className="absolute top-4 right-4 text-gray-400 hover:text-[#1e3b6a] transition-colors p-1 bg-gray-50 rounded-full">
-                  <Edit className="w-4 h-4" />
-               </button>
-               
-               <div className="space-y-1.5">
-                 <div className="text-[12px] text-gray-700 font-medium">
-                    <span className="font-bold text-gray-900">Nationalité:</span> {conducteur.permis?.nationalite || "Congolaise"}
-                 </div>
-                 <div className="text-[12px] text-gray-700 font-medium">
-                    <span className="font-bold text-gray-900">Date de naissance :</span> {conducteur.permis?.date_naissance || "N/A"}
-                 </div>
-                 <div className="text-[12px] text-gray-700 font-medium">
-                    <span className="font-bold text-gray-900">Ecole de formation :</span> {conducteur.ecole_formation || "N/A"}
-                 </div>
-                 <div className="text-[12px] text-gray-700 font-medium">
-                    <span className="font-bold text-gray-900">Ville / Commune:</span> {conducteur.ville || "Kinshasa"} - {conducteur.commune || ""}
-                 </div>
-                 <div className="text-[12px] text-gray-700 font-medium leading-tight truncate">
-                    <span className="font-bold text-gray-900">Adresse :</span> {conducteur.adresse || "N/A"}
-                 </div>
-               </div>
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gray-50 rounded-bl-full -z-10"></div>
+              <button className="absolute top-4 right-4 text-gray-400 hover:text-[#1e3b6a] transition-colors p-1 bg-gray-50 rounded-full">
+                <Edit className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-1.5">
+                <div className="text-[12px] text-gray-700 font-medium">
+                  <span className="font-bold text-gray-900">Nationalité:</span> {conducteur.permis?.nationalite || "Congolaise"}
+                </div>
+                <div className="text-[12px] text-gray-700 font-medium">
+                  <span className="font-bold text-gray-900">Date de naissance :</span> {conducteur.permis?.date_naissance || "N/A"}
+                </div>
+                <div className="text-[12px] text-gray-700 font-medium">
+                  <span className="font-bold text-gray-900">Ecole de formation :</span> {conducteur.ecole_formation || "N/A"}
+                </div>
+                <div className="text-[12px] text-gray-700 font-medium">
+                  <span className="font-bold text-gray-900">Ville / Commune:</span> {conducteur.ville || "Kinshasa"} - {conducteur.commune || ""}
+                </div>
+                <div className="text-[12px] text-gray-700 font-medium leading-tight truncate">
+                  <span className="font-bold text-gray-900">Adresse :</span> {conducteur.adresse || "N/A"}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Account Status / Notifications */}
           <div className="mx-5 md:mx-12 lg:mx-24 mt-5 bg-[#f2f8ff] border-2 border-dashed border-[#84a9e1]/60 rounded-2xl p-4 relative shrink-0 shadow-sm transition-all">
-             <div className="absolute -top-[14px] left-6 bg-white border border-[#e2eefa] shadow-sm rounded-full px-4 py-1.5 text-[10px] text-[#1e3b6a] font-bold tracking-wide uppercase">
-                État de validité
-             </div>
-             
-             {hasAlerts ? (
-               <div className="pt-2 pb-1 flex items-start gap-3 relative overflow-hidden h-12">
-                 <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-red-100 mt-0.5">
-                    <AlertCircle className="w-4 h-4 text-red-600" />
-                 </div>
-                 <div className="flex-1 min-w-0 relative h-full">
-                   {alertsArray.map((alert, idx) => (
-                     <div key={idx} 
+            <div className="absolute -top-[14px] left-6 bg-white border border-[#e2eefa] shadow-sm rounded-full px-4 py-1.5 text-[10px] text-[#1e3b6a] font-bold tracking-wide uppercase">
+              État de validité
+            </div>
+
+            {hasAlerts ? (
+              <div className="pt-2 pb-1 flex items-start gap-3 relative overflow-hidden h-12">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-red-100 mt-0.5">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="flex-1 min-w-0 relative h-full">
+                  {alertsArray.map((alert, idx) => (
+                    <div key={idx}
                       className={`absolute top-0 left-0 w-full transition-all duration-500 transform ${idx === currentAlertIndex ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0 pointer-events-none'}`}>
-                       <p className="text-red-600 font-bold text-xs leading-snug truncate">
-                          {alert}
-                       </p>
-                       <p className="text-red-500 font-medium text-[10px] mt-1 leading-snug">
-                          Veuillez régulariser cette situation.
-                       </p>
-                     </div>
-                   ))}
-                 </div>
-               </div>
-             ) : (
-               <div className="pt-2 pb-1 flex items-center gap-3">
-                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-4 h-4 text-[#1e3b6a]" />
-                 </div>
-                 <div className="text-[#1e3b6a] text-xs font-semibold leading-relaxed whitespace-normal break-words">
-                    {alertsArray[0] || "Tout est en règle."}
-                 </div>
-               </div>
-             )}
+                      <p className="text-red-600 font-bold text-xs leading-snug truncate">
+                        {alert}
+                      </p>
+                      <p className="text-red-500 font-medium text-[10px] mt-1 leading-snug">
+                        Veuillez régulariser cette situation.
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="pt-2 pb-1 flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-4 h-4 text-[#1e3b6a]" />
+                </div>
+                <div className="text-[#1e3b6a] text-xs font-semibold leading-relaxed whitespace-normal break-words">
+                  {alertsArray[0] || "Tout est en règle."}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Buttons Section (Statut fiscal & Expérience) */}
           <div className="flex justify-between items-center px-5 md:px-12 lg:px-24 mt-5 gap-3 shrink-0">
-            <button 
-               onClick={() => router.push('/statut-fiscal')}
-               className="flex-1 bg-[#1de140] hover:bg-[#18cc38] text-black px-3 py-3 rounded-xl flex items-center justify-center gap-1.5 font-bold shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+            <button
+              onClick={() => router.push('/statut-fiscal')}
+              className="flex-1 bg-[#1de140] hover:bg-[#18cc38] text-black px-3 py-3 rounded-xl flex items-center justify-center gap-1.5 font-bold shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
             >
-               <ArrowDown className="w-4 h-4 opacity-70" /> 
-               <span className="text-sm">Statut fiscal</span>
+              <ArrowDown className="w-4 h-4 opacity-70" />
+              <span className="text-sm">Statut fiscal</span>
             </button>
             <button className="flex-1 bg-[#f4b616] hover:bg-[#e6a800] text-black px-3 py-3 rounded-xl flex justify-center text-sm font-bold shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 text-center">
-               Expérience et casier
+              Expérience et casier
             </button>
           </div>
-          
+
           <h2 className="text-[14px] font-black text-gray-800 tracking-tight ml-5 md:ml-12 lg:ml-24 mt-5 mb-1 px-1">Flotte Actuelle</h2>
         </div>
 
         {/* BOTTOM SECTION */}
         <div className="w-full px-5 md:px-12 lg:px-24 pb-8 flex flex-col gap-4 mt-2">
 
-           {/* Vehicles Stacked List */}
-           {vehicules.length > 0 && vehicules.map((v, idx) => {
-             const assStatus = getValidityStatus(v.date_expiration_assurance);
-             const ctStatus = getValidityStatus(v.date_prochain_controle);
-             const vigStatus = getValidityStatus(v.date_expiration_vignette);
+          {/* Vehicles Stacked List */}
+          {vehicules.length > 0 && vehicules.map((v, idx) => {
+            const assStatus = getValidityStatus(v.date_expiration_assurance);
+            const ctStatus = getValidityStatus(v.date_prochain_controle);
+            const vigStatus = getValidityStatus(v.date_expiration_vignette);
 
-             return (
+            return (
               <div key={v.id} className="w-full bg-white rounded-3xl p-3 sm:p-5 shadow-sm border border-gray-100 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-5 relative transition-all hover:shadow-md animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both" style={{ animationDelay: `${idx * 100}ms` }}>
-                
+
                 {/* Vehicle Image */}
-                <div className="w-16 h-16 sm:w-24 sm:h-24 shrink-0 flex items-center justify-center p-1">
-                   <img src={getUsageIllustration(v.usage_categorie || 'Privé')} alt={v.marque} className="w-full h-full object-contain" />
+                <div className="w-16 h-16 sm:w-24 sm:h-24 shrink-0 flex items-center justify-center p-1 bg-white rounded-xl">
+                  <img src={getUsageIllustration(v.usage_categorie || 'Privé')} alt={v.marque} className="w-full h-full object-contain mix-blend-multiply" />
                 </div>
 
                 {/* Vehicle Info */}
                 <div className="flex-1 flex flex-col min-w-[150px]">
-                   <div className="flex items-center gap-2 flex-wrap">
-                     <h4 className="font-black text-[#1e3b6a] text-sm sm:text-lg leading-none">{v.marque} <span className="text-gray-500 font-semibold">{v.modele}</span></h4>
-                     <span className="text-[9px] sm:text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase tracking-widest leading-none whitespace-nowrap">
-                       {v.plaque}
-                     </span>
-                   </div>
-                   
-                   {/* Fiscal Indicators */}
-                   <div className="flex items-center flex-wrap gap-x-2 sm:gap-x-3 gap-y-1 mt-2 sm:mt-4">
-                      <div className="flex items-center gap-1 sm:gap-1.5">
-                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: assStatus.color }}></div>
-                         <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">ASSURANCE</span>
-                      </div>
-                      <div className="flex items-center gap-1 sm:gap-1.5">
-                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: ctStatus.color }}></div>
-                         <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">INSP. TECH</span>
-                      </div>
-                      <div className="flex items-center gap-1 sm:gap-1.5">
-                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: vigStatus.color }}></div>
-                         <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">VIGNETTE</span>
-                      </div>
-                   </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-black text-[#1e3b6a] text-sm sm:text-lg leading-none">{v.marque} <span className="text-gray-500 font-semibold">{v.modele}</span></h4>
+                    <span className="text-[9px] sm:text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase tracking-widest leading-none whitespace-nowrap">
+                      {v.plaque}
+                    </span>
+                  </div>
+
+                  {/* Fiscal Indicators */}
+                  <div className="flex items-center flex-wrap gap-x-2 sm:gap-x-3 gap-y-1 mt-2 sm:mt-4">
+                    <div className="flex items-center gap-1 sm:gap-1.5">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: assStatus.color }}></div>
+                      <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">ASSURANCE</span>
+                    </div>
+                    <div className="flex items-center gap-1 sm:gap-1.5">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: ctStatus.color }}></div>
+                      <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">INSP. TECH</span>
+                    </div>
+                    <div className="flex items-center gap-1 sm:gap-1.5">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: vigStatus.color }}></div>
+                      <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">VIGNETTE</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="w-full sm:w-auto flex justify-end shrink-0 sm:pl-2 mt-1 sm:mt-0">
                   <button onClick={() => router.push(`/dashboard-conducteur/vehicule/${v.id}`)} className="bg-[#0b5cff] text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black shadow-md hover:bg-blue-700 transition-colors uppercase tracking-widest whitespace-nowrap">
-                     VOIR FICHE
+                    VOIR FICHE
                   </button>
                 </div>
               </div>
-             );
-           })}
+            );
+          })}
 
-           {/* Add Vehicle Animated Button */}
-           <button 
-              onClick={() => setShowAddModal(true)}
-              className="w-full h-24 bg-gradient-to-r from-[#eef4ff] to-[#f8fbff] rounded-3xl p-4 flex items-center justify-between gap-4 shadow-[#cfdeff]/20 shadow-xl relative overflow-hidden group border-2 border-dashed border-[#caddff] hover:border-[#8ab3f9] shrink-0 mb-6"
-           >
-              <span className="text-[14px] font-black tracking-tight text-[#1e3b6a] z-10 w-full text-left">Ajoutez un véhicule</span>
-              
-              {/* Animations Circle */}
-              <div className="w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center relative shadow-sm z-10 shrink-0">
-                 <span className="text-blue-600 text-xl font-black z-20 absolute">+</span>
-                 {/* Animated Icons */}
-                 <Car className="w-6 h-6 text-[#1e3b6a]/20 absolute anim-car" strokeWidth={1.5} />
-                 <Bike className="w-6 h-6 text-[#1e3b6a]/20 absolute anim-moto" strokeWidth={1.5} />
-              </div>
-           </button>
+          {/* Add Vehicle Animated Button */}
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="w-full h-24 bg-gradient-to-r from-[#eef4ff] to-[#f8fbff] rounded-3xl p-4 flex items-center justify-between gap-4 shadow-[#cfdeff]/20 shadow-xl relative overflow-hidden group border-2 border-dashed border-[#caddff] hover:border-[#8ab3f9] shrink-0 mb-6"
+          >
+            <span className="text-[14px] font-black tracking-tight text-[#1e3b6a] z-10 w-full text-left">Ajoutez un véhicule</span>
+
+            {/* Animations Circle */}
+            <div className="w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center relative shadow-sm z-10 shrink-0">
+              <span className="text-blue-600 text-xl font-black z-20 absolute">+</span>
+              {/* Animated Icons */}
+              <Car className="w-6 h-6 text-[#1e3b6a]/20 absolute anim-car" strokeWidth={1.5} />
+              <Bike className="w-6 h-6 text-[#1e3b6a]/20 absolute anim-moto" strokeWidth={1.5} />
+            </div>
+          </button>
         </div>
       </main>
 
@@ -791,38 +771,38 @@ export default function DashboardConducteur() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in" onClick={() => setShowContactModal(false)}>
           <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-8 flex flex-col items-center relative overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 text-blue-600">
-               <Phone className="w-8 h-8" />
+              <Phone className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-bold text-[#1e3b6a] text-center tracking-tight mb-2">Mes Coordonnées</h3>
             <p className="text-sm text-center text-gray-500 mb-8 font-medium">Mettez à jour vos informations de contact pour être joignable par les agents.</p>
 
             <div className="w-full flex flex-col gap-4">
-               <div className="space-y-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Adresse Email</span>
-                  <Input 
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="votre@email.com"
-                    className="h-14 bg-gray-50 border-gray-100 rounded-2xl font-bold text-[#1e3b6a]"
-                  />
-               </div>
-               <div className="space-y-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Numéro de téléphone</span>
-                  <Input 
-                    value={newPhone}
-                    onChange={(e) => setNewPhone(e.target.value)}
-                    placeholder="+243 000 000 000"
-                    className="h-14 bg-gray-50 border-gray-100 rounded-2xl font-bold text-[#1e3b6a]"
-                  />
-               </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Adresse Email</span>
+                <Input
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="votre@email.com"
+                  className="h-14 bg-gray-50 border-gray-100 rounded-2xl font-bold text-[#1e3b6a]"
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Numéro de téléphone</span>
+                <Input
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="+243 000 000 000"
+                  className="h-14 bg-gray-50 border-gray-100 rounded-2xl font-bold text-[#1e3b6a]"
+                />
+              </div>
 
-               <Button 
-                 onClick={handleUpdateContact}
-                 disabled={updatingContact}
-                 className="h-14 bg-[#1e3b6a] text-white rounded-2xl font-bold shadow-lg mt-2"
-               >
-                 {updatingContact ? <Loader2 className="w-5 h-5 animate-spin" /> : "ENREGISTRER LES MODIFICATIONS"}
-               </Button>
+              <Button
+                onClick={handleUpdateContact}
+                disabled={updatingContact}
+                className="h-14 bg-[#1e3b6a] text-white rounded-2xl font-bold shadow-lg mt-2"
+              >
+                {updatingContact ? <Loader2 className="w-5 h-5 animate-spin" /> : "ENREGISTRER LES MODIFICATIONS"}
+              </Button>
             </div>
 
             <button onClick={() => setShowContactModal(false)} className="mt-6 text-xs font-bold text-gray-400 uppercase">
